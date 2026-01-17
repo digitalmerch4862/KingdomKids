@@ -119,7 +119,6 @@ const StudentPortalPage: React.FC<{ user: UserSession }> = ({ user }) => {
               <p className="text-[10px] font-black uppercase tracking-widest">Global Rank</p>
               <p className="text-2xl font-black">#{rank}</p>
             </div>
-            <div className="absolute top-0 right-0 p-4 text-5xl opacity-20">⭐</div>
           </div>
 
           <div className="bg-white p-8 rounded-[2.5rem] border border-pink-50 shadow-sm">
@@ -154,7 +153,6 @@ const StudentPortalPage: React.FC<{ user: UserSession }> = ({ user }) => {
               <p className="text-sm font-black text-pink-700 leading-relaxed tracking-tight whitespace-pre-wrap">
                 {advice}
               </p>
-              <div className="absolute -bottom-2 -right-2 text-4xl opacity-10">🤖</div>
             </div>
             <p className="mt-6 text-[9px] text-gray-300 font-bold uppercase tracking-widest text-center italic">
               Powered by Gemini • Updated live based on your progress
