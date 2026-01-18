@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 // 1. Corrected initialization for Vite projects
 // IMPORTANT: Ensure VITE_GOOGLE_API_KEY is set in your Vercel/local .env
 const ai = new GoogleGenAI({ 
-  apiKey: import.meta.env.VITE_GOOGLE_API_KEY 
+  apiKey: (import.meta as any).env.VITE_GOOGLE_API_KEY 
 });
 
 export class FaceService {
