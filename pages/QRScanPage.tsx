@@ -4,7 +4,7 @@ import CameraScanner from '../components/CameraScanner';
 import { db, formatError } from '../services/db.service';
 import { MinistryService } from '../services/ministry.service';
 import { audio } from '../services/audio.service';
-import jsQR from 'https://esm.sh/jsqr@1.4.0';
+import jsQR from 'jsqr';
 
 const getFirstName = (fullName: string) => {
   if (!fullName) return "Student";
