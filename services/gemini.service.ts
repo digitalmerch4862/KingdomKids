@@ -1,36 +1,54 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize the API using the standard Web SDK
+const API_KEY = process.env.API_KEY || '';
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 export class FaceService {
   static async generateEmbedding(base64Image: string): Promise<number[]> {
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: {
-          parts: [
-            { inlineData: { mimeType: 'image/jpeg', data: base64Image.split(',')[1] || base64Image } },
-            { text: "Generate a unique 128-float array representation (embedding) of the person's face in this image. Ensure the output is JUST a JSON array of 128 floats." }
-          ]
-        },
-        config: {
+      // Use gemini-1.5-flash as it is the standard, fast model available in the public SDK
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        generationConfig: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.ARRAY,
-            items: { type: Type.NUMBER }
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.NUMBER }
           }
         }
       });
 
-      const text = response.text || "[]";
+      // Remove header if present to get pure base64
+      const cleanBase64 = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
+
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: cleanBase64
+          }
+        },
+        { text: "Generate a unique 128-float array representation (embedding) of the person's face in this image. Ensure the output is JUST a JSON array of 128 floats." }
+      ]);
+
+      const response = result.response;
+      const text = response.text();
+      
       const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
       const arr = JSON.parse(jsonStr);
+      
       if (!Array.isArray(arr)) throw new Error("Gemini did not return an array");
-      const result = arr.slice(0, 128).map(v => typeof v === 'number' ? v : 0);
-      while (result.length < 128) result.push(0);
-      return result;
+      
+      // Normalize to 128 length
+      const resultArr = arr.slice(0, 128).map(v => typeof v === 'number' ? v : 0);
+      while (resultArr.length < 128) resultArr.push(0);
+      
+      return resultArr;
     } catch (error) {
+      console.error("Embedding Generation Error:", error);
+      // Return a random embedding as fallback to prevent crash during demo/offline
       return Array.from({ length: 128 }, () => Math.random());
     }
   }
@@ -54,16 +72,19 @@ export class FaceService {
 export class GeminiService {
   static async getStudentAdvice(points: number, rank: number, ageGroup: string, name: string): Promise<string> {
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `You are a friendly and encouraging mentor for a child in 'Kingdom Kids' church ministry. 
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      
+      const prompt = `You are a friendly and encouraging mentor for a child in 'Kingdom Kids' church ministry. 
         The child, ${name}, has ${points} points and is ranked #${rank} in the ${ageGroup} age group. 
         Give 3 short, specific, fun, and biblical tips on how they can earn more points 
         (like memorizing verses, helping others, being early, or participation) and grow in their faith. 
-        Keep the output in ALL CAPS, very positive, and kid-friendly (short sentences).`,
-      });
-      return response.text || "KEEP SHINING FOR JESUS! YOU ARE DOING AMAZING!";
+        Keep the output in ALL CAPS, very positive, and kid-friendly (short sentences).`;
+
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      return response.text() || "KEEP SHINING FOR JESUS! YOU ARE DOING AMAZING!";
     } catch (e) {
+      console.error("Advice Generation Error:", e);
       return "KEEP ATTENDING AND MEMORIZING VERSES TO CLIMB THE LEADERBOARD!";
     }
   }
