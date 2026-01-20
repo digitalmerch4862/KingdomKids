@@ -194,7 +194,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         >
           {!imgError ? (
             <img 
-              src="https://www.facebook.com/photo/?fbid=719819577027415&set=a.389902303352479" 
+              src="https://drive.google.com/uc?export=view&id=1KTIuQbowa4-0i-1pCGXSmD86mRj7nUNM" 
               alt="Kingdom Kids Logo"
               className="w-48 h-48 md:w-64 md:h-64 object-contain rounded-full mb-8 animate-in zoom-in duration-700"
               onError={() => setImgError(true)}

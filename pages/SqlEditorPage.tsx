@@ -22,62 +22,46 @@ const SqlEditorPage: React.FC = () => {
     localStorage.setItem('km_sql_history', JSON.stringify(updated));
   };
 
-  const officialRosterSql = `DELETE FROM students;
-INSERT INTO students (full_name, age_group, access_key, guardian_name, guardian_phone, is_enrolled) VALUES
-('ABUNIO, HEATHER ANNE B.', '10-12', 'KK-2026-271', 'JAN ABUINO', '9171234567', false),
-('AGUSTIN ELISHABETH G. (HAILEY)', '10-12', 'KK-2026-587', NULL, NULL, false),
-('AGUSTIN, NATHAN RAPHA G.', '10-12', 'KK-2026-336', NULL, NULL, false),
-('ANGELES, SOPHIA M.', '7-9', 'KK-2026-871', NULL, NULL, false),
-('BAQUIRIN, ZIAN', '7-9', 'KK-2026-400', NULL, NULL, false),
-('BORJA, REUBEN MATTHEW', '3-6', 'KK-2026-976', NULL, NULL, false),
-('BUEN, SELENA', '3-6', 'KK-2026-394', NULL, NULL, false),
-('COTONER, EZEKIEL S.', '10-12', 'KK-2026-170', NULL, NULL, false),
-('COTONER, QUIRUBEN', '10-12', 'KK-2026-498', NULL, NULL, false),
-('DATONG, ADAM EMMANUEL D.', '10-12', 'KK-2026-442', NULL, NULL, false),
-('DATONG, AMIRAH ALEXA', '7-9', 'KK-2026-107', NULL, NULL, false),
-('DE GUZMAN AUREA KRYSTLE G.', '10-12', 'KK-2026-400', NULL, NULL, false),
-('DIZON, EMMANUEL (ELLIE) D', '7-9', 'KK-2026-633', NULL, NULL, false),
-('DIZON, MALACHI', '10-12', 'KK-2026-801', NULL, NULL, false),
-('DUMAGAT, MARK ZACHARY M.', '10-12', 'KK-2026-740', NULL, NULL, false),
-('DUMAGAT, ZANAIAH CARLEIN M.', '10-12', 'KK-2026-115', NULL, NULL, false),
-('DURERO, CHAYIL ELI PE BENITO', '7-9', 'KK-2026-190', NULL, NULL, false),
-('FERRAREN, TIMOTHY A.', '3-6', 'KK-2026-509', NULL, NULL, false),
-('FORNILLOS, NICOLE', '3-6', 'KK-2026-950', NULL, NULL, false),
-('GAJOL, BETHEL Q.', '7-9', 'KK-2026-224', NULL, NULL, false),
-('GARCIA, MAKOY', '3-6', 'KK-2026-132', 'RAD GARCIA', '9175291018', false),
-('GOMEZ, PAUL JOHN', '10-12', 'KK-2026-345', NULL, NULL, false),
-('HERNANDEZ, ALYANNA', '3-6', 'KK-2026-548', NULL, NULL, false),
-('IBARRA, ZZAR OSCAR', '10-12', 'KK-2026-821', NULL, NULL, false),
-('JEMINA, SAMARRAH KRIZHIANA R.', '10-12', 'KK-2026-018', NULL, NULL, false),
-('LAVAPIE, YAZ ANESKA S.', '10-12', 'KK-2026-580', NULL, NULL, false),
-('LAZARO, ASHANTI MIKEILA', '10-12', 'KK-2026-721', NULL, NULL, false),
-('LONDONIO, DRORR S.', '10-12', 'KK-2026-462', NULL, NULL, false),
-('LUSTERIO, MALAYKA', '10-12', 'KK-2026-008', NULL, NULL, false),
-('MANAOIS, EARLSCOTHY', '7-9', 'KK-2026-061', NULL, NULL, false),
-('NUSKA, MARY AGATHA B.', '10-12', 'KK-2026-348', NULL, NULL, false),
-('PADASAS, WELGIN D.', '10-12', 'KK-2026-990', NULL, NULL, false),
-('PARICO, CALEB', '7-9', 'KK-2026-184', NULL, NULL, false),
-('PERALTA, GIO', '3-6', 'KK-2026-403', NULL, NULL, false),
-('PEREZ, ISAAC EZEKIEL', '10-12', 'KK-2026-628', NULL, NULL, false),
-('PIZZARO, CHAYIL CYRA GRACE A.', '7-9', 'KK-2026-762', NULL, NULL, false),
-('PORRAS, BJ', '10-12', 'KK-2026-491', NULL, NULL, false),
-('PORRAS, RHIANNA', '7-9', 'KK-2026-895', NULL, NULL, false),
-('RAMOS, ELAISHA MAE R.', '10-12', 'KK-2026-474', NULL, NULL, false),
-('REY, MARCUS JOHANN G.', '3-6', 'KK-2026-254', NULL, NULL, false),
-('RIVERA, ACE RYANN E', '10-12', 'KK-2026-429', NULL, NULL, false),
-('ROSARIO, PRINCESS SOFHIA M.', '10-12', 'KK-2026-093', NULL, NULL, false),
-('SANTE, SHANN', '10-12', 'KK-2026-819', NULL, NULL, false),
-('SHARA ARIZALA', '10-12', 'KK-2026-959', NULL, NULL, false),
-('SURIO, ATARRA BELLA S.', '3-6', 'KK-2026-714', NULL, NULL, false),
-('TABOR, DIANA EZRA C.', '3-6', 'KK-2026-843', NULL, NULL, false),
-('TABOR, EOIN JAMES C.', '10-12', 'KK-2026-961', NULL, NULL, false),
-('VILLAMAYOR, NOAH ELIO G.', '3-6', 'KK-2026-881', NULL, NULL, false),
-('ZHU, NATASHA VAINE', '7-9', 'KK-2026-283', NULL, NULL, false),
-('ZHU, SOPHIA BELLE', '3-6', 'KK-2026-544', NULL, NULL, false);`;
+  const seedDemoDataSql = `
+-- 1. Insert Sample Students
+INSERT INTO students (full_name, age_group, is_enrolled, access_key) VALUES
+('ALEXA G.', '10-12', true, 'KK-DEMO-001'),
+('LIAM P.', '7-9', true, 'KK-DEMO-002'),
+('ZARA M.', '3-6', true, 'KK-DEMO-003'),
+('NOAH E.', '3-6', true, 'KK-DEMO-004'),
+('MIA S.', '10-12', true, 'KK-DEMO-005')
+ON CONFLICT DO NOTHING;
+
+-- 2. Insert Sample Points for Current Month
+-- Get IDs we just inserted/found
+DO $$
+DECLARE
+    alexa_id uuid;
+    liam_id uuid;
+    zara_id uuid;
+    noah_id uuid;
+    mia_id uuid;
+    today date := current_date;
+BEGIN
+    SELECT id INTO alexa_id FROM students WHERE access_key = 'KK-DEMO-001';
+    SELECT id INTO liam_id FROM students WHERE access_key = 'KK-DEMO-002';
+    SELECT id INTO zara_id FROM students WHERE access_key = 'KK-DEMO-003';
+    SELECT id INTO noah_id FROM students WHERE access_key = 'KK-DEMO-004';
+    SELECT id INTO mia_id FROM students WHERE access_key = 'KK-DEMO-005';
+
+    -- Insert Points
+    INSERT INTO point_ledger (student_id, entry_date, category, points, recorded_by) VALUES
+    (alexa_id, today, 'Memory Verse', 500, 'System'),
+    (liam_id, today, 'Attendance', 450, 'System'),
+    (zara_id, today, 'Activity', 300, 'System'),
+    (noah_id, today, 'Recitation', 250, 'System'),
+    (mia_id, today, 'Bonus', 200, 'System');
+END $$;
+`;
 
   const quickQueries = [
     { label: 'Verify Registry', sql: "SELECT * FROM students ORDER BY full_name ASC;" },
-    { label: 'Seed Official Roster', sql: officialRosterSql },
+    { label: 'Seed Visual Demo Data', sql: seedDemoDataSql },
     { label: 'Wipe All Points (Hard Reset)', sql: "DELETE FROM point_ledger;" },
     { label: 'Points Leaderboard', sql: "SELECT s.full_name, SUM(l.points) as total FROM point_ledger l JOIN students s ON l.student_id = s.id WHERE l.voided = false GROUP BY s.full_name ORDER BY total DESC;" },
     { label: 'Recent Movement', sql: "SELECT s.full_name, a.check_in_time, a.status FROM attendance_sessions a JOIN students s ON a.student_id = s.id ORDER BY a.check_in_time DESC LIMIT 50;" },

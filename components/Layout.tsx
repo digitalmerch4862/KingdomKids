@@ -18,7 +18,15 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       {user && (
         <div className="md:hidden flex items-center justify-between p-4 bg-white/80 backdrop-blur-md border-b border-pink-100 sticky top-0 z-[60]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center text-white font-black text-lg">K</div>
+            <img 
+              src="https://drive.google.com/uc?export=view&id=1KTIuQbowa4-0i-1pCGXSmD86mRj7nUNM"
+              alt="KK"
+              className="w-8 h-8 rounded-lg object-cover shadow-sm border border-pink-100 bg-pink-100"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "https://ui-avatars.com/api/?name=Kingdom+Kids&background=ec4899&color=fff&size=128&bold=true";
+              }}
+            />
             <h1 className="text-xs font-black text-gray-800 uppercase tracking-tighter">Kingdom Kids</h1>
           </div>
           <button 

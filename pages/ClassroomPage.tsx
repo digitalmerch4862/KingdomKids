@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MinistryService, LeaderboardEntry } from '../services/ministry.service';
-import { db } from '../services/db.service';
-import { AgeGroup, UserSession } from '../types';
+import { db, formatError } from '../services/db.service';
+import { AgeGroup, UserSession, Student } from '../types';
 import { DEFAULT_POINT_RULES } from '../constants';
 import { audio } from '../services/audio.service';
 
@@ -22,6 +22,17 @@ const ClassroomPage: React.FC = () => {
   const [awardError, setAwardError] = useState('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   
+  // Edit Profile Modal State
+  const [editingProfile, setEditingProfile] = useState<Student | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    fullName: '',
+    guardianName: '',
+    guardianPhone: '',
+    notes: ''
+  });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState('');
+
   // History State for Undo/Redo
   const [undoStack, setUndoStack] = useState<Array<{points: number, category: string}>>([]);
   const [redoStack, setRedoStack] = useState<Array<{points: number, category: string}>>([]);
@@ -63,6 +74,65 @@ const ClassroomPage: React.FC = () => {
   const closeModal = () => {
     audio.playClick();
     setSelectedStudent(null);
+  };
+
+  // Edit Profile Handlers
+  const openEditModal = (student: LeaderboardEntry) => {
+    audio.playClick();
+    setEditingProfile(student);
+    setEditFormData({
+      fullName: student.fullName,
+      guardianName: student.guardianName,
+      guardianPhone: student.guardianPhone,
+      notes: student.notes || ''
+    });
+    setProfileError('');
+  };
+
+  const closeEditModal = () => {
+    audio.playClick();
+    setEditingProfile(null);
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProfile) return;
+    
+    setIsSavingProfile(true);
+    setProfileError('');
+    audio.playClick();
+
+    try {
+      await db.updateStudent(editingProfile.id, {
+        fullName: editFormData.fullName.toUpperCase(),
+        guardianName: editFormData.guardianName.toUpperCase(),
+        guardianPhone: editFormData.guardianPhone,
+        notes: editFormData.notes
+      });
+
+      // Update local roster state immediately
+      setRoster(prev => prev.map(s => 
+        s.id === editingProfile.id 
+          ? { 
+              ...s, 
+              fullName: editFormData.fullName.toUpperCase(),
+              guardianName: editFormData.guardianName.toUpperCase(),
+              guardianPhone: editFormData.guardianPhone,
+              notes: editFormData.notes
+            } 
+          : s
+      ));
+
+      setEditingProfile(null);
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 2000);
+      audio.playYehey();
+    } catch (err: any) {
+      console.error("Profile update failed:", err);
+      setProfileError(formatError(err));
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   // Core transaction logic - Returns true if successful
@@ -216,7 +286,15 @@ const ClassroomPage: React.FC = () => {
                       <span className="text-[9px] text-pink-400 font-black">PTS</span>
                     </div>
                   </td>
-                  <td className="px-8 py-6 text-right space-x-2">
+                  <td className="px-8 py-6 text-right space-x-2 flex justify-end items-center">
+                    <button 
+                      onMouseEnter={() => audio.playHover()}
+                      onClick={() => openEditModal(student)}
+                      className="w-10 h-10 bg-white border border-pink-100 text-pink-400 rounded-xl flex items-center justify-center hover:bg-pink-50 transition-all shadow-sm active:scale-95 text-lg"
+                      title="Edit Profile"
+                    >
+                      ✏️
+                    </button>
                     <button 
                       onMouseEnter={() => audio.playHover()}
                       onClick={() => openModal(student)}
@@ -232,6 +310,7 @@ const ClassroomPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Award Points Modal */}
       {selectedStudent && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] md:rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
@@ -334,6 +413,89 @@ const ClassroomPage: React.FC = () => {
         </div>
       )}
 
+      {/* Edit Profile Modal */}
+      {editingProfile && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] md:rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+            <div className="bg-pink-500 p-8 text-white relative">
+              <h3 className="text-xl font-black uppercase tracking-tighter">Edit Student</h3>
+              <p className="text-pink-100 text-[10px] font-black uppercase tracking-widest opacity-80">
+                Updating details for {editingProfile.fullName}
+              </p>
+              <button 
+                onClick={closeEditModal} 
+                className="absolute top-8 right-8 text-white/50 hover:text-white transition-colors text-3xl font-black leading-none"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <form onSubmit={handleSaveProfile} className="p-8 space-y-6">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
+                <input 
+                  type="text" 
+                  value={editFormData.fullName}
+                  onChange={e => setEditFormData({...editFormData, fullName: e.target.value.toUpperCase()})}
+                  className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all font-bold text-gray-700 text-[12px] uppercase"
+                  placeholder="STUDENT NAME"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Guardian Name</label>
+                  <input 
+                    type="text" 
+                    value={editFormData.guardianName}
+                    onChange={e => setEditFormData({...editFormData, guardianName: e.target.value.toUpperCase()})}
+                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all font-bold text-gray-700 text-[12px] uppercase"
+                    placeholder="PARENT NAME"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Contact No.</label>
+                  <input 
+                    type="text" 
+                    value={editFormData.guardianPhone}
+                    onChange={e => setEditFormData({...editFormData, guardianPhone: e.target.value})}
+                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all font-bold text-gray-700 text-[12px]"
+                    placeholder="09XXXXXXXXX"
+                    maxLength={11}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Notes</label>
+                <textarea 
+                  value={editFormData.notes}
+                  onChange={e => setEditFormData({...editFormData, notes: e.target.value})}
+                  className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all font-bold text-gray-700 text-[12px] resize-none"
+                  placeholder="Medical notes, allergies, etc..."
+                  rows={3}
+                />
+              </div>
+
+              {profileError && (
+                <div className="bg-red-50 text-red-600 p-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-center animate-in shake">
+                  {profileError}
+                </div>
+              )}
+
+              <button 
+                type="submit"
+                disabled={isSavingProfile}
+                className="w-full py-4 bg-pink-500 hover:bg-pink-600 text-white font-black rounded-2xl shadow-xl shadow-pink-100 transition-all uppercase tracking-widest text-[12px] disabled:opacity-50"
+              >
+                {isSavingProfile ? 'SAVING CHANGES...' : 'SAVE STUDENT DETAILS'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Limit Reached Popup */}
       {limitError && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
@@ -356,7 +518,7 @@ const ClassroomPage: React.FC = () => {
       {showSuccessToast && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[110] bg-gray-800 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5">
           <span className="text-xl">✨</span>
-          <span className="text-xs font-black uppercase tracking-widest">Transaction Recorded Successfully</span>
+          <span className="text-xs font-black uppercase tracking-widest">Changes Saved Successfully</span>
         </div>
       )}
     </div>

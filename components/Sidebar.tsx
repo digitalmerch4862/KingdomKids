@@ -42,7 +42,15 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
       <div className="p-6 overflow-y-auto flex-1">
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-pink-500 rounded-[1.25rem] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-pink-100">K</div>
+            <img 
+              src="https://drive.google.com/uc?export=view&id=1KTIuQbowa4-0i-1pCGXSmD86mRj7nUNM"
+              alt="KK"
+              className="w-10 h-10 rounded-[1.25rem] object-cover shadow-lg shadow-pink-100 bg-pink-100"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "https://ui-avatars.com/api/?name=Kingdom+Kids&background=ec4899&color=fff&size=128&bold=true";
+              }}
+            />
             <h1 className="text-sm font-black text-gray-800 tracking-tighter leading-tight uppercase">Kingdom Kids<br/><span className="text-[10px] text-pink-500 tracking-[0.2em]">Management</span></h1>
           </div>
           <button className="md:hidden text-gray-400" onClick={onClose}>✕</button>
