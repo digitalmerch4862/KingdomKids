@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { db, formatError } from '../services/db.service';
-import { Student, AgeGroup, UserRole, UserSession } from '../types';
+import { Student, AgeGroup, UserSession } from '../types';
 import { audio } from '../services/audio.service';
 
 const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
@@ -22,9 +22,7 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
   });
 
   const isTeacherOrAdmin = user.role === 'TEACHER' || user.role === 'ADMIN';
-  
-  // Super Admin Check (rad with pro226 password, identified by ADMIN role and RAD username)
-  const isSuperAdmin = user.username === 'RAD' && user.role === 'ADMIN';
+  const isAdmin = user.role === 'ADMIN';
 
   useEffect(() => {
     loadStudents();
@@ -169,56 +167,115 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
     audio.playClick();
   };
 
-  const handleDeleteClick = async (student: Student) => {
-    // Only allow if Super Admin
-    if (!isSuperAdmin) {
-      console.warn("Delete attempted by non-admin user");
+  // --- Step 1: Create delete handler function ---
+  const handleDelete = async (id: string) => {
+    audio.playClick();
+    
+    // Trigger standard browser confirmation dialog
+    if (!window.confirm("Are you sure you want to delete this student?")) {
       return;
     }
-    
-    audio.playClick();
-    const confirmed = window.confirm(`DANGER: Are you absolutely sure you want to permanently delete ${student.fullName}? This action cannot be undone.`);
-    
-    if (confirmed) {
-      try {
-        setErrorMsg(`DELETING ${student.fullName.toUpperCase()}...`);
-        await db.deleteStudent(student.id);
-        
-        await db.log({
-          eventType: 'AUDIT_WIPE',
-          actor: user.username,
-          entityId: student.id,
-          payload: { action: 'DELETE_STUDENT', studentName: student.fullName }
-        });
 
-        audio.playYehey();
-        setErrorMsg('');
-        setStudents(prev => prev.filter(s => s.id !== student.id));
-      } catch (err: any) {
-        console.error("Delete failed:", err);
-        setErrorMsg(`DELETE FAILED: ${formatError(err)}`);
-      }
+    try {
+      setErrorMsg(`DELETING...`);
+      
+      // Step 2: Connect to Supabase
+      await db.deleteStudent(id);
+      
+      // Audit log (optional but good practice)
+      await db.log({
+        eventType: 'AUDIT_WIPE',
+        actor: user.username,
+        entityId: id,
+        payload: { action: 'DELETE_STUDENT_BY_ID' }
+      });
+
+      audio.playYehey();
+      setErrorMsg('');
+      
+      // Step 3: Update the UI
+      setStudents(prev => prev.filter(s => s.id !== id));
+      
+    } catch (err: any) {
+      console.error("Delete failed:", err);
+      setErrorMsg(`DELETE FAILED: ${formatError(err)}`);
+      alert("Failed to delete student. Please try again.");
     }
   };
 
-  const downloadQrCode = async (accessKey: string, studentName: string) => {
+  // Generate and Download ID Badge (626x626px - ~53mm square)
+  const generateAndDownloadBadge = async (student: Student) => {
     audio.playClick();
-    const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${accessKey}`;
     try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
+      // 1. Setup Canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = 626; 
+      canvas.height = 626;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return alert("Canvas not supported");
+
+      // 2. Draw White Background
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, 626, 626);
+
+      // 3. Load QR Code Image
+      // Note: We use crossOrigin anonymous to allow canvas export
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      // Requesting a slightly larger QR to scale down nicely
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=450x450&data=${student.accessKey}&format=png`;
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      // 4. Draw QR Code Centered
+      // Center X = 313. Image Width = 450. Left = 313 - 225 = 88.
+      // Top Position = 50px padding from top.
+      ctx.drawImage(img, 88, 50, 450, 450);
+
+      // 5. Draw Text (Student Nickname)
+      const nickname = getFirstName(student.fullName).toUpperCase();
+      
+      // Auto-scale text to fit
+      let fontSize = 60;
+      ctx.font = `900 ${fontSize}px Inter, sans-serif`;
+      
+      // Measure and reduce font size if too wide (max width 550px)
+      while (ctx.measureText(nickname).width > 550 && fontSize > 20) {
+        fontSize -= 5;
+        ctx.font = `900 ${fontSize}px Inter, sans-serif`;
+      }
+
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // Position text below QR code (50 + 450 + some padding)
+      ctx.fillText(nickname, 313, 550);
+
+      // 6. Download
+      const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = `Kingdom_AccessKey_${studentName.replace(/\s+/g, '_')}_${accessKey}.png`;
+      link.href = dataUrl;
+      link.download = `${student.fullName.replace(/\s+/g, '_')}_ID.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
+      
     } catch (e) {
-      console.error("Download failed", e);
-      alert("Could not download QR code. Please try again.");
+      console.error("Badge Generation Failed:", e);
+      alert("Failed to generate ID Badge. Please try again.");
     }
+  };
+
+  const getFirstName = (fullName: string) => {
+    if (!fullName) return "";
+    if (fullName.includes(',')) {
+      const parts = fullName.split(',');
+      return parts[1].trim().split(' ')[0];
+    }
+    return fullName.split(' ')[0];
   };
 
   const downloadAccessKeysCsv = () => {
@@ -308,8 +365,9 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
         {filteredStudents.map(s => (
           <div key={s.id} className="bg-white p-7 rounded-[2.5rem] border border-pink-50 shadow-sm hover:shadow-xl hover:shadow-pink-100/30 transition-all group relative overflow-hidden">
             {isTeacherOrAdmin && (
-              <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+              <div className="absolute top-6 right-6 flex gap-2 z-10">
                 <button 
+                  type="button"
                   onMouseEnter={() => audio.playHover()}
                   onClick={() => handleEditClick(s)}
                   className="w-12 h-12 bg-white border border-pink-100 text-pink-500 rounded-2xl flex items-center justify-center hover:bg-pink-500 hover:text-white transition-all shadow-md text-xl"
@@ -317,10 +375,11 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
                 >
                   👤
                 </button>
-                {isSuperAdmin && (
+                {isAdmin && (
                   <button 
+                    type="button"
                     onMouseEnter={() => audio.playHover()}
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteClick(s); }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(s.id); }}
                     className="w-12 h-12 bg-white border border-red-100 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-md text-xl cursor-pointer"
                     title="DELETE RECORD"
                   >
@@ -341,17 +400,12 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
             <span className="inline-block px-3 py-1 bg-gray-50 text-gray-400 rounded-lg text-[12px] font-black uppercase tracking-widest mb-6 border border-gray-100/50">{s.ageGroup} Group</span>
             
             <button 
-               onClick={() => downloadQrCode(s.accessKey, s.fullName)}
+               onClick={() => generateAndDownloadBadge(s)}
                onMouseEnter={() => audio.playHover()}
-               title="Click to Download Access QR"
-               className="flex flex-col items-center justify-center p-3 bg-gray-50/50 rounded-2xl border border-pink-50 mb-6 w-full hover:bg-pink-50 transition-all group/qr relative overflow-hidden"
+               className="flex items-center justify-center gap-2 p-4 bg-pink-500 text-white rounded-[1.25rem] shadow-lg shadow-pink-100 mb-6 w-full hover:bg-pink-600 transition-all font-black uppercase tracking-widest text-[10px] active:scale-95"
             >
-               <img 
-                 src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${s.accessKey}`} 
-                 alt="QR Code" 
-                 className="w-20 h-20 opacity-80 group-hover/qr:scale-110 transition-transform"
-               />
-               <span className="text-[8px] font-black text-pink-400 uppercase tracking-widest mt-2 opacity-0 group-hover/qr:opacity-100 transition-opacity">Download Access QR</span>
+               <span className="text-lg">🪪</span>
+               <span>DL ID Badge</span>
             </button>
 
             <div className="space-y-4 pt-5 border-t border-pink-50/50">
@@ -408,11 +462,11 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
             
             <form onSubmit={handleSave} className="p-10 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
               <div className="space-y-1">
-                <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1">Student Full Name</label>
+                <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1">Nickname</label>
                 <input 
                   type="text" 
                   required
-                  placeholder="LAST NAME, FIRST NAME"
+                  placeholder="ENTER NICKNAME"
                   className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all uppercase font-bold text-gray-700 text-[12px]"
                   value={formData.fullName}
                   onChange={e => setFormData({ ...formData, fullName: e.target.value.toUpperCase() })}
@@ -441,11 +495,11 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1">Guardian Name</label>
+                <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1">Guardian Nickname</label>
                 <input 
                   type="text" 
                   required
-                  placeholder="PARENT OR GUARDIAN"
+                  placeholder="GUARDIAN NICKNAME"
                   className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all uppercase font-bold text-gray-700 text-[12px]"
                   value={formData.guardianName}
                   onChange={e => setFormData({ ...formData, guardianName: e.target.value.toUpperCase() })}

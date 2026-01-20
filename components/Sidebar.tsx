@@ -21,6 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
     { label: 'QR Check-In', icon: '📷', path: '/admin/qr-scan' },
     { label: 'Students', icon: '👥', path: '/admin/students' },
     { label: 'Points Ledger', icon: '⭐', path: '/admin/points' },
+    { label: 'Fairness Monitor', icon: '⚖️', path: '/admin/fairness' },
     { label: 'Leaderboard', icon: '🏆', path: '/leaderboard' },
   ];
 

@@ -19,6 +19,7 @@ import SqlEditorPage from './pages/SqlEditorPage';
 import PointsLedgerPage from './pages/PointsLedgerPage';
 import StudentPortalPage from './pages/StudentPortalPage';
 import AssignmentsPage from './pages/AssignmentsPage';
+import TeacherFairnessPage from './pages/TeacherFairnessPage';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserSession | null>(null);
@@ -70,6 +71,10 @@ const App: React.FC = () => {
 
           <Route path="/admin/points" element={
              !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <PointsLedgerPage user={user} /> : <Navigate to="/portal" replace />)
+          } />
+
+          <Route path="/admin/fairness" element={
+             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <TeacherFairnessPage /> : <Navigate to="/portal" replace />)
           } />
 
           <Route path="/admin/enrollment" element={

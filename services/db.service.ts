@@ -1,3 +1,4 @@
+
 import { Student, FaceEmbedding, AttendanceSession, PointLedger, AuditLog, AppSettings, PointRule, ActivitySchedule, AgeGroup, Assignment } from '../types';
 import { supabase } from './supabase';
 
@@ -31,12 +32,6 @@ class DatabaseService {
       age--;
     }
     return age;
-  }
-
-  private generateAccessKey(): string {
-    const year = new Date().getFullYear();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `KK-${year}-${random}`;
   }
 
   async runRawSql(query: string): Promise<any[]> {
@@ -174,10 +169,38 @@ class DatabaseService {
   }
 
   async addStudent(data: Omit<Student, 'id' | 'createdAt' | 'updatedAt' | 'isEnrolled' | 'accessKey'>) {
+    let accessKey = '';
+    
+    if (data.birthday) {
+      // Step 2: Format Date (YYYYMMDD)
+      const yyyymmdd = data.birthday.replace(/-/g, '');
+      
+      // Step 1: Check for duplicates (Count existing students with this birthday)
+      const { count, error: countError } = await supabase
+        .from('students')
+        .select('*', { count: 'exact', head: true })
+        .eq('birthday', data.birthday);
+        
+      if (countError) throw new Error("Failed to check birthday sequence: " + countError.message);
+      
+      // Step 3: Generate Sequence (Count + 1, Pad with zero if < 10)
+      const sequence = (count || 0) + 1;
+      const paddedSequence = sequence.toString().padStart(2, '0');
+      
+      // Step 4: Create Key (KK-YYYYMMDD-SEQUENCE)
+      accessKey = `KK-${yyyymmdd}-${paddedSequence}`;
+    } else {
+      // Fallback if no birthday provided
+      const year = new Date().getFullYear();
+      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      accessKey = `KK-${year}-${random}`;
+    }
+
+    // Step 5: Insert
     const { data: result, error } = await supabase
       .from('students')
       .insert([{
-        access_key: this.generateAccessKey(),
+        access_key: accessKey,
         full_name: data.fullName,
         birthday: data.birthday || null,
         age_group: data.ageGroup,
@@ -298,6 +321,35 @@ class DatabaseService {
     }));
   }
 
+  async getFairnessData(startDate: string, endDate: string) {
+    // Fetches point ledger joined with students to get metadata
+    const { data, error } = await supabase
+      .from('point_ledger')
+      .select(`
+        *,
+        students (
+          id, full_name, age_group
+        )
+      `)
+      .eq('voided', false)
+      .gte('entry_date', startDate)
+      .lte('entry_date', endDate);
+    
+    if (error) throw new Error(formatError(error));
+    
+    // Transform to a friendlier format
+    return (data || []).map((row: any) => ({
+      ...row,
+      recordedBy: row.recorded_by, // Map for consistency
+      entryDate: row.entry_date,
+      student: row.students ? {
+        id: row.students.id,
+        fullName: row.students.full_name,
+        ageGroup: row.students.age_group
+      } : null
+    }));
+  }
+
   async addPointEntry(data: Omit<PointLedger, 'id' | 'createdAt' | 'voided'>) {
     const { data: result, error } = await supabase
       .from('point_ledger')
@@ -307,7 +359,6 @@ class DatabaseService {
         category: data.category,
         points: data.points,
         notes: data.notes,
-        // Fix: Changed data.recorded_by to data.recordedBy to match the PointLedger type.
         recorded_by: data.recordedBy,
         voided: false
       }])
@@ -355,7 +406,6 @@ class DatabaseService {
       id: data.id,
       matchThreshold: data.match_threshold,
       autoCheckoutTime: data.auto_checkout_time,
-      // Fix: Change allowDuplicate_points to allowDuplicatePoints to match AppSettings type
       allowDuplicatePoints: data.allow_duplicate_points
     };
   }

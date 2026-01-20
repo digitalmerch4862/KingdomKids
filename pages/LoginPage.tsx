@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { AUTH_PASSWORDS } from '../constants';
 import { UserRole, AgeGroup } from '../types';
 import { audio } from '../services/audio.service';
@@ -26,6 +26,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Splash Screen State
+  const [showSplash, setShowSplash] = useState(true);
+  const [isFading, setIsFading] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
   // Registration Modal State
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -38,6 +43,23 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     guardianPhone: '09',
     notes: ''
   });
+
+  useEffect(() => {
+    // Keep splash visible for 3 seconds, then fade out
+    const fadeTimer = setTimeout(() => {
+      setIsFading(true);
+    }, 3000);
+
+    // Remove from DOM after fade transition (approx 500ms)
+    const removeTimer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3500);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,7 +186,33 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#fdf2f8]">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#fdf2f8] relative">
+      {/* Splash Screen */}
+      {showSplash && (
+        <div 
+          className={`fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center transition-opacity duration-500 ease-in-out ${isFading ? 'opacity-0' : 'opacity-100'}`}
+        >
+          {!imgError ? (
+            <img 
+              src="https://www.facebook.com/photo/?fbid=719819577027415&set=a.389902303352479" 
+              alt="Kingdom Kids Logo"
+              className="w-48 h-48 md:w-64 md:h-64 object-contain rounded-full mb-8 animate-in zoom-in duration-700"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-pink-50 border-8 border-pink-100 flex items-center justify-center mb-8 shadow-2xl animate-in zoom-in duration-700">
+              <span className="text-pink-400 font-black text-xl uppercase tracking-widest">Logo Here</span>
+            </div>
+          )}
+          
+          <div className="flex gap-2 items-center animate-in slide-in-from-bottom-4 fade-in duration-700 delay-300">
+            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce delay-75"></div>
+            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce delay-150"></div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-md w-full">
         <div className="bg-white p-10 rounded-[3rem] shadow-2xl shadow-pink-200/50 border border-pink-50 text-center animate-in fade-in zoom-in-95 duration-500">
           <div className="w-16 h-16 bg-pink-500 rounded-[1.5rem] flex items-center justify-center text-white font-black text-3xl mx-auto mb-6 shadow-lg shadow-pink-100">K</div>
