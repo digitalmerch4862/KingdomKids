@@ -78,8 +78,8 @@ export class MinistryService {
         actor, 
         'Automated points awarded for Sunday check-in'
       );
-    } catch (pointErr) {
-      console.warn("Attendance points auto-award skipped or failed:", pointErr);
+    } catch (pointErr: any) {
+      console.warn("Attendance points auto-award skipped or failed:", pointErr.message);
     }
 
     return session;
@@ -147,6 +147,22 @@ export class MinistryService {
     const isCorrection = points < 0;
     const isManual = category.includes('Manual');
 
+    // 1. Check Daily Limit (Max 50 points per Sunday)
+    // Only enforce limit if we are adding positive points
+    if (points > 0) {
+      const dailyTotal = ledger
+        .filter(l => l.studentId === studentId && l.entryDate === today && !l.voided)
+        .reduce((sum, entry) => sum + entry.points, 0);
+      
+      const newTotal = dailyTotal + points;
+      const DAILY_LIMIT = 50;
+
+      if (newTotal > DAILY_LIMIT) {
+        throw new Error(`Daily limit reached! Student has ${dailyTotal} pts. Max is ${DAILY_LIMIT}. Adding ${points} would exceed limit.`);
+      }
+    }
+
+    // 2. Check Duplicate Rule
     if (!settings.allowDuplicatePoints && !isCorrection && !isManual) {
       const existing = ledger.find(l => 
         l.studentId === studentId && 

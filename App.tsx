@@ -39,7 +39,6 @@ const App: React.FC = () => {
   const handleLogout = () => {
     localStorage.removeItem('km_session');
     setUser(null);
-    // Router will handle redirection to login page based on !user state
   };
 
   const isTeacherOrAdmin = user?.role === 'TEACHER' || user?.role === 'ADMIN';
@@ -54,62 +53,51 @@ const App: React.FC = () => {
         
         <Route element={<Layout user={user} onLogout={handleLogout} />}>
           <Route path="/admin" element={
-            !user ? <Navigate to="/login" replace /> :
-            (isTeacherOrAdmin ? <AdminDashboard activity={activity} /> : <Navigate to="/portal" replace />)
+            !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <AdminDashboard activity={activity} /> : <Navigate to="/portal" replace />)
           } />
 
           <Route path="/admin/students" element={
-            !user ? <Navigate to="/login" replace /> :
-            (isTeacherOrAdmin ? <StudentsPage user={user} /> : <Navigate to="/portal" replace />)
+            !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <StudentsPage user={user} /> : <Navigate to="/portal" replace />)
           } />
 
           <Route path="/admin/assignments" element={
-            !user ? <Navigate to="/login" replace /> :
-            (isTeacherOrAdmin ? <AssignmentsPage user={user} /> : <Navigate to="/portal" replace />)
+            !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <AssignmentsPage user={user} /> : <Navigate to="/portal" replace />)
           } />
 
           <Route path="/admin/logs" element={
-            !user ? <Navigate to="/login" replace /> :
-            (isTeacherOrAdmin ? <AttendanceLogsPage /> : <Navigate to="/portal" replace />)
+             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <AttendanceLogsPage /> : <Navigate to="/portal" replace />)
           } />
 
           <Route path="/admin/points" element={
-            !user ? <Navigate to="/login" replace /> :
-            (isTeacherOrAdmin ? <PointsLedgerPage user={user} /> : <Navigate to="/portal" replace />)
+             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <PointsLedgerPage user={user} /> : <Navigate to="/portal" replace />)
           } />
 
           <Route path="/admin/enrollment" element={
-            !user ? <Navigate to="/login" replace /> :
-            (isTeacherOrAdmin ? <EnrollmentPage /> : <Navigate to="/portal" replace />)
+             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <EnrollmentPage /> : <Navigate to="/portal" replace />)
           } />
 
           <Route path="/admin/qr-scan" element={
-            !user ? <Navigate to="/login" replace /> :
-            (isTeacherOrAdmin ? <QRScanPage username={user.username} /> : <Navigate to="/portal" replace />)
+             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <QRScanPage username={user.username} /> : <Navigate to="/portal" replace />)
           } />
 
           <Route path="/admin/sql" element={
-            !user ? <Navigate to="/login" replace /> :
-            (isAdmin ? <SqlEditorPage /> : <Navigate to="/admin" replace />)
+             !user ? <Navigate to="/login" replace /> : (isAdmin ? <SqlEditorPage /> : <Navigate to="/admin" replace />)
           } />
 
           <Route path="/classrooms/:group" element={
-            !user ? <Navigate to="/login" replace /> :
-            (isTeacherOrAdmin ? <ClassroomPage /> : <Navigate to="/portal" replace />)
+             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <ClassroomPage /> : <Navigate to="/portal" replace />)
           } />
 
           <Route path="/leaderboard" element={
-            user ? <LeaderboardPage /> : <Navigate to="/login" replace />
+            !user ? <Navigate to="/login" replace /> : <LeaderboardPage />
           } />
 
           <Route path="/portal" element={
-            !user ? <Navigate to="/login" replace /> :
-            (user.role === 'PARENTS' ? <StudentPortalPage user={user} /> : <Navigate to="/admin" replace />)
+             !user ? <Navigate to="/login" replace /> : (user.role === 'PARENTS' ? <StudentPortalPage user={user} /> : <Navigate to="/admin" replace />)
           } />
 
           <Route path="/teacher/scan" element={
-            !user ? <Navigate to="/login" replace /> :
-            (isTeacherOrAdmin ? <FaceScanPage user={user} /> : <Navigate to="/portal" replace />)
+             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <FaceScanPage user={user!} /> : <Navigate to="/portal" replace />)
           } />
         </Route>
 

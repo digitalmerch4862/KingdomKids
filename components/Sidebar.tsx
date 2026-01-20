@@ -20,8 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
     { label: 'Dashboard', icon: '📊', path: '/admin' },
     { label: 'QR Check-In', icon: '📷', path: '/admin/qr-scan' },
     { label: 'Students', icon: '👥', path: '/admin/students' },
-    // Points Ledger hidden as requested
-    // { label: 'Points Ledger', icon: '⭐', path: '/admin/points' },
+    { label: 'Points Ledger', icon: '⭐', path: '/admin/points' },
     { label: 'Leaderboard', icon: '🏆', path: '/leaderboard' },
   ];
 
@@ -37,16 +36,13 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
     ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
   `;
 
-  // Dynamic subtitle based on role
-  const logoSubtitle = user.role === 'PARENTS' ? 'Student Portal' : 'Management';
-
   return (
     <aside className={sidebarClasses}>
       <div className="p-6 overflow-y-auto flex-1">
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-pink-500 rounded-[1.25rem] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-pink-100">K</div>
-            <h1 className="text-sm font-black text-gray-800 tracking-tighter leading-tight uppercase">Kingdom Kids<br/><span className="text-[10px] text-pink-500 tracking-[0.2em]">{logoSubtitle}</span></h1>
+            <h1 className="text-sm font-black text-gray-800 tracking-tighter leading-tight uppercase">Kingdom Kids<br/><span className="text-[10px] text-pink-500 tracking-[0.2em]">Management</span></h1>
           </div>
           <button className="md:hidden text-gray-400" onClick={onClose}>✕</button>
         </div>
@@ -94,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
           onClick={() => { audio.playClick(); onLogout(); }}
           className="w-full flex items-center gap-2 px-4 py-3 text-[10px] font-black text-gray-300 hover:text-pink-600 transition-colors uppercase tracking-widest group"
         >
-          <span className="text-base group-hover:scale-110 transition-transform">🚪</span> Sign Out Portal
+          <span className="text-base group-hover:scale-110 transition-transform">🚪</span> Sign Out
         </button>
       </div>
     </aside>

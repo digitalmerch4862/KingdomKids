@@ -93,35 +93,37 @@ const StudentPortalPage: React.FC<{ user: UserSession }> = ({ user }) => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20">
       {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row items-center gap-6 bg-white p-8 rounded-[3rem] border border-pink-50 shadow-sm relative overflow-hidden">
-        <div className="w-24 h-24 bg-pink-500 rounded-[2rem] flex items-center justify-center text-white text-4xl font-black border-4 border-white shadow-xl shrink-0 overflow-hidden">
+      <div className="flex flex-col md:flex-row items-center gap-6 bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-pink-50 shadow-sm relative overflow-hidden">
+        <div className="w-20 h-20 md:w-24 md:h-24 bg-pink-500 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center text-white text-3xl md:text-4xl font-black border-4 border-white shadow-xl shrink-0 overflow-hidden">
           {student.photoUrl ? <img src={student.photoUrl} className="w-full h-full object-cover" /> : student.fullName[0]}
         </div>
         <div className="text-center md:text-left">
-          <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tighter">HI, {getFirstName(student.fullName).toUpperCase()}!</h2>
+          <h2 className="text-2xl md:text-3xl font-black text-gray-800 uppercase tracking-tighter">HI, {getFirstName(student.fullName).toUpperCase()}!</h2>
           <p className="text-pink-500 font-black uppercase tracking-widest text-xs mt-1">ACCESS KEY: {student.accessKey}</p>
           <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
-            <span className="px-3 py-1 bg-gray-50 text-gray-400 rounded-full text-[10px] font-black uppercase tracking-widest">{student.ageGroup} CLASSROOM</span>
-            <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-black uppercase tracking-widest">ACTIVE PORTAL</span>
+            <span className="px-3 py-1 bg-gray-50 text-gray-400 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest">{student.ageGroup} CLASSROOM</span>
+            <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest">ACTIVE PORTAL</span>
           </div>
         </div>
+        <div className="hidden md:block absolute right-10 top-1/2 -translate-y-1/2 text-pink-50/50 text-8xl font-black italic select-none">PORTAL</div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         {/* Scoreboard */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-gradient-to-br from-pink-500 to-rose-400 p-10 rounded-[3rem] text-white shadow-xl shadow-pink-100 text-center relative overflow-hidden">
+          <div className="bg-gradient-to-br from-pink-500 to-rose-400 p-8 md:p-10 rounded-[2.5rem] md:rounded-[3rem] text-white shadow-xl shadow-pink-100 text-center relative overflow-hidden">
             <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-2">My Total Stars</p>
-            <p className="text-7xl font-black mb-6 drop-shadow-lg">{points}</p>
-            <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-md inline-block">
-              <p className="text-[10px] font-black uppercase tracking-widest">Global Rank</p>
-              <p className="text-2xl font-black">#{rank}</p>
+            <p className="text-6xl md:text-7xl font-black mb-6 drop-shadow-lg">{points}</p>
+            <div className="bg-white/20 p-3 md:p-4 rounded-2xl backdrop-blur-md inline-block">
+              <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Global Rank</p>
+              <p className="text-xl md:text-2xl font-black">#{rank}</p>
             </div>
+            <div className="absolute top-0 right-0 p-4 text-5xl opacity-20">⭐</div>
           </div>
 
-          <div className="bg-white p-8 rounded-[2.5rem] border border-pink-50 shadow-sm">
+          <div className="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-pink-50 shadow-sm">
             <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-6">Recent Activity</h3>
             <div className="space-y-4">
               {history.map(h => (
@@ -139,54 +141,55 @@ const StudentPortalPage: React.FC<{ user: UserSession }> = ({ user }) => {
         </div>
 
         {/* AI Advice & QR */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-6 md:space-y-8">
           {/* Gemini Advice Card */}
-          <div className="bg-white p-10 rounded-[3rem] border border-pink-50 shadow-sm relative overflow-hidden group">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-12 bg-pink-100 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">💡</div>
+          <div className="bg-white p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] border border-pink-50 shadow-sm relative overflow-hidden group">
+            <div className="flex items-center gap-4 mb-6 md:mb-8">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-pink-100 rounded-2xl flex items-center justify-center text-xl md:text-2xl group-hover:scale-110 transition-transform">💡</div>
               <div>
                 <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">HOW TO RANK UP</h3>
                 <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest">Personalized AI Advice</p>
               </div>
             </div>
-            <div className="bg-pink-50/50 p-8 rounded-[2rem] border border-pink-100 relative">
-              <p className="text-sm font-black text-pink-700 leading-relaxed tracking-tight whitespace-pre-wrap">
+            <div className="bg-pink-50/50 p-6 md:p-8 rounded-[2rem] border border-pink-100 relative">
+              <p className="text-xs md:text-sm font-black text-pink-700 leading-relaxed tracking-tight whitespace-pre-wrap">
                 {advice}
               </p>
+              <div className="absolute -bottom-2 -right-2 text-4xl opacity-10">🤖</div>
             </div>
-            <p className="mt-6 text-[9px] text-gray-300 font-bold uppercase tracking-widest text-center italic">
+            <p className="mt-4 md:mt-6 text-[9px] text-gray-300 font-bold uppercase tracking-widest text-center italic">
               Powered by Gemini • Updated live based on your progress
             </p>
           </div>
 
           {/* QR Display */}
-          <div className="bg-white p-10 rounded-[3rem] border border-pink-50 shadow-sm text-center space-y-6">
+          <div className="bg-white p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] border border-pink-50 shadow-sm text-center space-y-6">
             <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">My Access QR</h3>
             <button 
                onClick={downloadQrCode}
                onMouseEnter={() => audio.playHover()}
                title="Click to Download Access QR"
-               className="flex justify-center p-4 bg-gray-50 rounded-[2.5rem] border border-gray-100 w-fit mx-auto shadow-inner hover:bg-pink-50 transition-all group/qr"
+               className="flex justify-center p-4 bg-gray-50 rounded-[2rem] md:rounded-[2.5rem] border border-gray-100 w-fit mx-auto shadow-inner hover:bg-pink-50 transition-all group/qr"
             >
                <img 
                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${student.accessKey}`} 
                  alt="Access QR" 
-                 className="w-40 h-40 group-hover/qr:scale-110 transition-transform"
+                 className="w-32 h-32 md:w-40 md:h-40 group-hover/qr:scale-110 transition-transform"
                />
             </button>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest max-w-xs mx-auto leading-relaxed">
               Show this Access QR to your teacher for lightning-fast check-in!
             </p>
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="flex flex-col md:flex-row justify-center gap-3">
               <button 
                 onClick={() => { audio.playClick(); window.print(); }}
-                className="px-8 py-3 bg-pink-50 text-pink-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-100 transition-all border border-pink-100"
+                className="px-6 md:px-8 py-3 bg-pink-50 text-pink-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-100 transition-all border border-pink-100"
               >
                 Print Access Card
               </button>
               <button 
                 onClick={downloadQrCode}
-                className="px-8 py-3 bg-pink-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-600 transition-all border border-pink-600 shadow-lg shadow-pink-100"
+                className="px-6 md:px-8 py-3 bg-pink-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-600 transition-all border border-pink-600 shadow-lg shadow-pink-100"
               >
                 Download Access QR
               </button>

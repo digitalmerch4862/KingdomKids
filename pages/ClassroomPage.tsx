@@ -21,6 +21,13 @@ const ClassroomPage: React.FC = () => {
   const [isAwarding, setIsAwarding] = useState(false);
   const [awardError, setAwardError] = useState('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  
+  // History State for Undo/Redo
+  const [undoStack, setUndoStack] = useState<Array<{points: number, category: string}>>([]);
+  const [redoStack, setRedoStack] = useState<Array<{points: number, category: string}>>([]);
+  
+  // Limit Popup State
+  const [limitError, setLimitError] = useState<string | null>(null);
 
   const sessionStr = localStorage.getItem('km_session');
   const user: UserSession | null = sessionStr ? JSON.parse(sessionStr) : null;
@@ -41,47 +48,113 @@ const ClassroomPage: React.FC = () => {
     loadClassroom();
   }, [group]);
 
-  const handleAwardPoints = async (category: string, points: number) => {
-    if (!selectedStudent || !user) return;
+  // Reset modal state when opening a new student
+  const openModal = (student: LeaderboardEntry) => {
+    audio.playClick();
+    setSelectedStudent(student);
+    setManualPoints(5);
+    setSelectedCategory('Manual Adjustment');
+    setAwardError('');
+    // Clear history when opening new modal session
+    setUndoStack([]);
+    setRedoStack([]);
+  };
+
+  const closeModal = () => {
+    audio.playClick();
+    setSelectedStudent(null);
+  };
+
+  // Core transaction logic - Returns true if successful
+  const processTransaction = async (category: string, points: number): Promise<boolean> => {
+    if (!selectedStudent || !user) return false;
     
     setIsAwarding(true);
     setAwardError('');
-    audio.playClick();
     
     try {
-      // Ensure points are not negative
-      const safePoints = Math.max(0, points);
-      
       await MinistryService.addPoints(
         selectedStudent.id,
         category,
-        safePoints,
+        points,
         user.username,
         `Point transaction in ${group} classroom`
       );
       
-      audio.playYehey();
-
+      // Update local roster state immediately
       setRoster(prev => prev.map(s => 
         s.id === selectedStudent.id 
-          ? { ...s, totalPoints: s.totalPoints + safePoints } 
+          ? { ...s, totalPoints: s.totalPoints + points } 
           : s
       ));
       
-      setSelectedStudent(null);
+      // Visual feedback
+      if (points > 0) audio.playYehey();
+      else audio.playClick();
+
       setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
+      setTimeout(() => setShowSuccessToast(false), 2000);
+      return true;
+
     } catch (err: any) {
-      setAwardError(err.message || "Failed to update points.");
+      if (err.message && (err.message.includes('limit') || err.message.includes('Limit'))) {
+        setLimitError(err.message);
+      } else {
+        setAwardError(err.message || "Failed to update points.");
+        // Play error sound/feedback here if available
+      }
+      return false;
     } finally {
       setIsAwarding(false);
+    }
+  };
+
+  // 1. New Action (Clear redo, add to undo)
+  const handleAddPoints = async () => {
+    audio.playClick();
+    const success = await processTransaction(selectedCategory, manualPoints);
+    if (success) {
+      setUndoStack(prev => [...prev, { points: manualPoints, category: selectedCategory }]);
+      setRedoStack([]); // Clear redo stack on new action
+    }
+  };
+
+  // 2. Undo Action (Pop undo, add negative, push to redo)
+  const handleUndo = async () => {
+    if (undoStack.length === 0 || isAwarding) return;
+    audio.playClick();
+    
+    const lastAction = undoStack[undoStack.length - 1];
+    
+    // Apply negative points to reverse
+    const success = await processTransaction(`Undo: ${lastAction.category}`, -lastAction.points);
+    
+    if (success) {
+      setUndoStack(prev => prev.slice(0, -1)); // Remove last
+      setRedoStack(prev => [...prev, lastAction]); // Add to redo
+    }
+  };
+
+  // 3. Redo Action (Pop redo, re-add positive, push to undo)
+  const handleRedo = async () => {
+    if (redoStack.length === 0 || isAwarding) return;
+    audio.playClick();
+
+    const nextAction = redoStack[redoStack.length - 1];
+    
+    // Re-apply original points
+    const success = await processTransaction(`Redo: ${nextAction.category}`, nextAction.points);
+    
+    if (success) {
+      setRedoStack(prev => prev.slice(0, -1)); // Remove from redo
+      setUndoStack(prev => [...prev, nextAction]); // Add back to undo
     }
   };
 
   if (loading) return <div className="p-10 text-center animate-pulse uppercase font-black text-pink-300">Loading Classroom...</div>;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 relative">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 relative">
       <div className="flex items-center gap-4">
         <button 
           onMouseEnter={() => audio.playHover()}
@@ -91,18 +164,18 @@ const ClassroomPage: React.FC = () => {
           ←
         </button>
         <div>
-          <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tighter">Classroom: {group} Years</h2>
+          <h2 className="text-2xl md:text-3xl font-black text-gray-800 uppercase tracking-tighter">Classroom: {group} Years</h2>
           <p className="text-gray-400 font-medium uppercase tracking-widest text-[10px]">Roster and live activity</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] shadow-sm border border-pink-50 overflow-hidden">
-        <div className="p-8 border-b border-pink-50 flex justify-between items-center bg-gray-50/30">
+      <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-pink-50 overflow-hidden">
+        <div className="p-6 md:p-8 border-b border-pink-50 flex justify-between items-center bg-gray-50/30">
           <h3 className="font-black text-gray-800 text-sm uppercase tracking-widest">Student Roster</h3>
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{roster.length} Total Students</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-gray-50/50 text-[10px] font-bold text-pink-400 uppercase tracking-widest border-b border-pink-50">
                 <th className="px-8 py-5">Student Name</th>
@@ -120,7 +193,7 @@ const ClassroomPage: React.FC = () => {
                       <div className="w-10 h-10 bg-pink-50 rounded-xl flex items-center justify-center text-pink-500 font-black text-xs border border-pink-100">
                         {student.fullName[0]}
                       </div>
-                      <span className="font-bold text-gray-800 uppercase tracking-tight">{student.fullName}</span>
+                      <span className="font-bold text-gray-800 uppercase tracking-tight text-xs md:text-sm">{student.fullName}</span>
                     </div>
                   </td>
                   <td className="px-8 py-6">
@@ -146,13 +219,7 @@ const ClassroomPage: React.FC = () => {
                   <td className="px-8 py-6 text-right space-x-2">
                     <button 
                       onMouseEnter={() => audio.playHover()}
-                      onClick={() => { 
-                        audio.playClick();
-                        setSelectedStudent(student); 
-                        setManualPoints(5);
-                        setSelectedCategory('Manual Adjustment');
-                        setAwardError(''); 
-                      }}
+                      onClick={() => openModal(student)}
                       className="px-5 py-2.5 bg-pink-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-pink-100 hover:bg-pink-600 transition-all active:scale-95"
                     >
                       Update Points
@@ -167,40 +234,40 @@ const ClassroomPage: React.FC = () => {
 
       {selectedStudent && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-            <div className="bg-pink-500 p-10 text-white relative">
-              <h3 className="text-2xl font-black uppercase tracking-tighter">Adjust Stars</h3>
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] md:rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <div className="bg-pink-500 p-6 md:p-10 text-white relative shrink-0">
+              <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter">Adjust Stars</h3>
               <p className="text-pink-100 text-[10px] font-black uppercase tracking-widest opacity-80">
                 {selectedStudent.fullName}
               </p>
               <button 
-                onClick={() => { audio.playClick(); setSelectedStudent(null); }} 
-                className="absolute top-10 right-10 text-white/50 hover:text-white transition-colors text-3xl font-black leading-none"
+                onClick={closeModal} 
+                className="absolute top-6 right-6 md:top-10 md:right-10 text-white/50 hover:text-white transition-colors text-3xl font-black leading-none"
                 disabled={isAwarding}
               >
                 &times;
               </button>
             </div>
             
-            <div className="p-8 space-y-8">
+            <div className="p-6 md:p-8 space-y-6 md:space-y-8 overflow-y-auto">
               {/* Manual Adjustment Section */}
-              <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 text-center space-y-4">
+              <div className="bg-gray-50 p-4 md:p-6 rounded-[2rem] border border-gray-100 text-center space-y-4">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Point Calculator</label>
-                <div className="flex items-center justify-center gap-6">
+                <div className="flex items-center justify-center gap-4 md:gap-6">
                   <button 
                     onMouseEnter={() => audio.playHover()}
                     onClick={() => { audio.playClick(); setManualPoints(prev => Math.max(0, prev - 1)); }}
-                    className="w-14 h-14 bg-white border-2 border-gray-100 rounded-2xl text-2xl font-black text-gray-400 hover:bg-gray-100 transition-all active:scale-90"
+                    className="w-10 h-10 md:w-14 md:h-14 bg-white border-2 border-gray-100 rounded-2xl text-xl md:text-2xl font-black text-gray-400 hover:bg-gray-100 transition-all active:scale-90 flex items-center justify-center"
                   >
                     -
                   </button>
-                  <div className="text-4xl font-black w-24 tabular-nums text-gray-800">
+                  <div className="text-3xl md:text-4xl font-black w-16 md:w-24 tabular-nums text-gray-800">
                     {manualPoints}
                   </div>
                   <button 
                     onMouseEnter={() => audio.playHover()}
                     onClick={() => { audio.playClick(); setManualPoints(prev => prev + 1); }}
-                    className="w-14 h-14 bg-white border-2 border-green-100 rounded-2xl text-2xl font-black text-green-400 hover:bg-green-50 transition-all active:scale-90"
+                    className="w-10 h-10 md:w-14 md:h-14 bg-white border-2 border-green-100 rounded-2xl text-xl md:text-2xl font-black text-green-400 hover:bg-green-50 transition-all active:scale-90 flex items-center justify-center"
                   >
                     +
                   </button>
@@ -220,31 +287,41 @@ const ClassroomPage: React.FC = () => {
 
                 <button 
                   onMouseEnter={() => audio.playHover()}
-                  onClick={() => handleAwardPoints(selectedCategory, manualPoints)}
+                  onClick={handleAddPoints}
                   disabled={isAwarding || manualPoints === 0}
-                  className="w-full py-4 font-black rounded-2xl uppercase tracking-widest text-xs shadow-xl transition-all bg-pink-500 text-white shadow-pink-100 hover:bg-pink-600 disabled:opacity-50"
+                  className="w-full py-3 md:py-4 font-black rounded-2xl uppercase tracking-widest text-xs shadow-xl transition-all bg-pink-500 text-white shadow-pink-100 hover:bg-pink-600 disabled:opacity-50"
                 >
                   {isAwarding ? 'PROCESSING...' : `ADD ${manualPoints} POINTS`}
                 </button>
               </div>
 
-              {/* Standard Quick Presets */}
-              <div className="space-y-3">
-                <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em] ml-2">Quick Standard Rules</p>
-                <div className="grid grid-cols-1 gap-2">
-                  {DEFAULT_POINT_RULES.map((rule, idx) => (
-                    <button
-                      key={idx}
-                      onMouseEnter={() => audio.playHover()}
-                      onClick={() => handleAwardPoints(rule.category, rule.points)}
-                      disabled={isAwarding}
-                      className="flex items-center justify-between px-6 py-3 bg-white border border-gray-100 rounded-2xl hover:border-pink-100 hover:bg-pink-50/30 group transition-all disabled:opacity-50"
-                    >
-                      <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest group-hover:text-pink-500">{rule.category}</span>
-                      <span className="font-black text-pink-400 text-xs">+{rule.points}</span>
-                    </button>
-                  ))}
-                </div>
+              {/* Undo / Redo Controls */}
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={handleUndo}
+                  disabled={undoStack.length === 0 || isAwarding}
+                  onMouseEnter={() => audio.playHover()}
+                  className={`py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all border flex items-center justify-center gap-2 ${
+                    undoStack.length === 0 
+                      ? 'bg-gray-100 text-gray-300 border-transparent cursor-not-allowed' 
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300 shadow-sm active:scale-95'
+                  }`}
+                >
+                  <span className="text-sm">↩️</span> Undo
+                </button>
+
+                <button
+                  onClick={handleRedo}
+                  disabled={redoStack.length === 0 || isAwarding}
+                  onMouseEnter={() => audio.playHover()}
+                  className={`py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all border flex items-center justify-center gap-2 ${
+                    redoStack.length === 0 
+                      ? 'bg-gray-100 text-gray-300 border-transparent cursor-not-allowed' 
+                      : 'bg-white text-pink-500 border-pink-100 hover:bg-pink-50 hover:border-pink-200 shadow-sm active:scale-95'
+                  }`}
+                >
+                  Redo <span className="text-sm">↪️</span>
+                </button>
               </div>
 
               {awardError && (
@@ -254,6 +331,25 @@ const ClassroomPage: React.FC = () => {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Limit Reached Popup */}
+      {limitError && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
+           <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-300 border-4 border-pink-100">
+              <div className="w-20 h-20 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl animate-bounce">
+                🛑
+              </div>
+              <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight mb-2">Daily Limit Hit</h3>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest leading-relaxed mb-8">{limitError}</p>
+              <button 
+                onClick={() => { audio.playClick(); setLimitError(null); }} 
+                className="w-full bg-pink-500 hover:bg-pink-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-pink-200 transition-all active:scale-95"
+              >
+                 Okay, Understood
+              </button>
+           </div>
         </div>
       )}
 

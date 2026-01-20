@@ -23,8 +23,8 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
 
   const isTeacherOrAdmin = user.role === 'TEACHER' || user.role === 'ADMIN';
   
-  // Allow any ADMIN to delete
-  const isSuperAdmin = user.role === 'ADMIN';
+  // Super Admin Check (rad with pro226 password, identified by ADMIN role and RAD username)
+  const isSuperAdmin = user.username === 'RAD' && user.role === 'ADMIN';
 
   useEffect(() => {
     loadStudents();
@@ -85,6 +85,7 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
     const val = e.target.value;
     if (val) {
       const year = val.split('-')[0];
+      // Prevent typing more than 4 digits for the year
       if (year.length > 4) return;
     }
     setFormData({ ...formData, birthday: val });
@@ -169,6 +170,7 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
   };
 
   const handleDeleteClick = async (student: Student) => {
+    // Only allow if Super Admin
     if (!isSuperAdmin) {
       console.warn("Delete attempted by non-admin user");
       return;
@@ -306,7 +308,7 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
         {filteredStudents.map(s => (
           <div key={s.id} className="bg-white p-7 rounded-[2.5rem] border border-pink-50 shadow-sm hover:shadow-xl hover:shadow-pink-100/30 transition-all group relative overflow-hidden">
             {isTeacherOrAdmin && (
-              <div className="absolute top-6 right-6 flex gap-2 z-20">
+              <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <button 
                   onMouseEnter={() => audio.playHover()}
                   onClick={() => handleEditClick(s)}

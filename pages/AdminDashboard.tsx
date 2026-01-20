@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, formatError } from '../services/db.service';
@@ -118,51 +119,57 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tighter">Dashboard</h2>
+          <h2 className="text-2xl md:text-3xl font-black text-gray-800 uppercase tracking-tighter">Dashboard</h2>
           <p className="text-gray-400 font-medium uppercase tracking-widest text-[10px]">Kingdom Kids Live Monitoring</p>
         </div>
         
-        <div className="flex items-center gap-8">
-          <div className="text-right">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8 bg-white md:bg-transparent p-4 md:p-0 rounded-2xl border border-pink-50 md:border-none shadow-sm md:shadow-none">
+          <div className="flex justify-between md:block items-center text-right">
             <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest block mb-0.5">Date Today</span>
-            <p className="text-lg font-black text-gray-700 uppercase tracking-tighter">{formattedDate}</p>
+            <p className="text-base md:text-lg font-black text-gray-700 uppercase tracking-tighter">{formattedDate}</p>
           </div>
-          <div className="w-px h-8 bg-pink-50"></div>
-          <div className="text-right">
+          <div className="hidden md:block w-px h-8 bg-pink-50"></div>
+          <div className="flex justify-between md:block items-center text-right">
             <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest block mb-0.5">Current Time</span>
-            <p className="text-lg font-black text-gray-700 uppercase tracking-tighter">{formattedTime}</p>
+            <p className="text-base md:text-lg font-black text-gray-700 uppercase tracking-tighter">{formattedTime}</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-pink-50">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-pink-50">
           <p className="text-xs font-bold text-pink-400 uppercase tracking-widest mb-1">Attendance Rate</p>
-          <p className="text-4xl font-black text-gray-800">{stats.attendanceRate}%</p>
+          <p className="text-3xl md:text-4xl font-black text-gray-800">{stats.attendanceRate}%</p>
           <div className="mt-4 w-full bg-pink-50 h-2 rounded-full overflow-hidden">
             <div className="bg-pink-500 h-full transition-all duration-1000" style={{ width: `${stats.attendanceRate}%` }}></div>
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-pink-50">
-          <p className="text-xs font-bold text-pink-400 uppercase tracking-widest mb-1 text-green-500">Present Today</p>
-          <p className="text-4xl font-black text-gray-800">{stats.checkedInCount}</p>
-          <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-widest">Live Scan Count</p>
+        <div className="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-pink-50 flex flex-row md:block justify-between items-center md:items-start">
+          <div>
+            <p className="text-xs font-bold text-pink-400 uppercase tracking-widest mb-1 text-green-500">Present Today</p>
+            <p className="text-3xl md:text-4xl font-black text-gray-800">{stats.checkedInCount}</p>
+            <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-widest">Live Scan Count</p>
+          </div>
+          <div className="md:hidden text-4xl">📸</div>
         </div>
 
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-pink-50">
-          <p className="text-xs font-bold text-pink-400 uppercase tracking-widest mb-1">Points Issued</p>
-          <p className="text-4xl font-black text-gray-800">{stats.totalPointsToday}</p>
-          <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-widest">Total Ledger Sum</p>
+        <div className="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-pink-50 flex flex-row md:block justify-between items-center md:items-start">
+          <div>
+            <p className="text-xs font-bold text-pink-400 uppercase tracking-widest mb-1">Points Issued</p>
+            <p className="text-3xl md:text-4xl font-black text-gray-800">{stats.totalPointsToday}</p>
+            <p className="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-widest">Total Ledger Sum</p>
+          </div>
+          <div className="md:hidden text-4xl">⭐</div>
         </div>
       </div>
 
       {/* Birthdays This Month - Post-it style */}
       {birthdays.length > 0 && (
-        <div className="bg-[#FFF9E6] p-8 rounded-[2.5rem] border-2 border-dashed border-amber-200 shadow-sm relative overflow-hidden">
+        <div className="bg-[#FFF9E6] p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border-2 border-dashed border-amber-200 shadow-sm relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-6">
               <span className="text-3xl animate-bounce">🎂</span>
@@ -197,7 +204,7 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
       {/* Classrooms Section */}
       <div className="space-y-4">
         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Live Classrooms</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {classrooms.map((cls) => (
             <div 
               key={cls.group}
@@ -233,7 +240,7 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Live Feed (Latest In)</h3>
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-pink-50 overflow-hidden h-fit">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left min-w-[600px]">
               <thead>
                 <tr className="bg-gray-50/50 text-[9px] font-bold text-pink-400 uppercase tracking-widest border-b border-pink-50">
                   <th className="px-8 py-5">Student</th>

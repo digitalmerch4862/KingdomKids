@@ -46,14 +46,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
     if (!username) return setError('Username is required');
 
-    // Trim username to prevent whitespace issues (e.g. "RAD " vs "RAD")
-    const cleanUsername = username.trim().toUpperCase();
-
     if (role === 'TEACHER') {
       if (password === AUTH_PASSWORDS.ADMIN) {
-        onLogin('ADMIN', cleanUsername);
+        onLogin('ADMIN', username.toUpperCase());
       } else if (password === AUTH_PASSWORDS.TEACHER) {
-        onLogin('TEACHER', cleanUsername);
+        onLogin('TEACHER', username.toUpperCase());
       } else {
         setError('Invalid password for Teacher');
       }
@@ -170,14 +167,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#fdf2f8]">
       <div className="max-w-md w-full">
         <div className="bg-white p-10 rounded-[3rem] shadow-2xl shadow-pink-200/50 border border-pink-50 text-center animate-in fade-in zoom-in-95 duration-500">
-          
-          {/* Logo Update: Using the direct LH3 link for better reliability */}
-          <img 
-            src="https://lh3.googleusercontent.com/d/1r1FyWY4izq0Xiy3L1WhXmIKGQDdNNPIy" 
-            alt="Kingdom Kids Logo" 
-            className="h-24 w-auto mx-auto mb-6 drop-shadow-xl hover:scale-105 transition-transform duration-300" 
-          />
-          
+          <div className="w-16 h-16 bg-pink-500 rounded-[1.5rem] flex items-center justify-center text-white font-black text-3xl mx-auto mb-6 shadow-lg shadow-pink-100">K</div>
           <h2 className="text-2xl font-black text-gray-800 mb-2 uppercase tracking-tighter">Kingdom Kids</h2>
           <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mb-8">Access Portal</p>
           
