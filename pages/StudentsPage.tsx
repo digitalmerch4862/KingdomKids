@@ -167,22 +167,22 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
     audio.playClick();
   };
 
-  // --- Step 1: Create delete handler function ---
+  // --- DELETE FUNCTIONALITY ---
   const handleDelete = async (id: string) => {
     audio.playClick();
     
-    // Trigger standard browser confirmation dialog
-    if (!window.confirm("Are you sure you want to delete this student?")) {
+    // Safety Requirement: Browser confirmation
+    if (!window.confirm("Are you sure you want to delete this student? This action cannot be undone.")) {
       return;
     }
 
     try {
-      setErrorMsg(`DELETING...`);
+      setErrorMsg(`DELETING RECORD...`);
       
-      // Step 2: Connect to Supabase
+      // Database Requirement: Delete via Supabase
       await db.deleteStudent(id);
       
-      // Audit log (optional but good practice)
+      // Audit log
       await db.log({
         eventType: 'AUDIT_WIPE',
         actor: user.username,
@@ -193,7 +193,7 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
       audio.playYehey();
       setErrorMsg('');
       
-      // Step 3: Update the UI
+      // Update UI immediately
       setStudents(prev => prev.filter(s => s.id !== id));
       
     } catch (err: any) {
@@ -219,10 +219,8 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
       ctx.fillRect(0, 0, 626, 626);
 
       // 3. Load QR Code Image
-      // Note: We use crossOrigin anonymous to allow canvas export
       const img = new Image();
       img.crossOrigin = "Anonymous";
-      // Requesting a slightly larger QR to scale down nicely
       img.src = `https://api.qrserver.com/v1/create-qr-code/?size=450x450&data=${student.accessKey}&format=png`;
       
       await new Promise((resolve, reject) => {
@@ -231,18 +229,14 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
       });
 
       // 4. Draw QR Code Centered
-      // Center X = 313. Image Width = 450. Left = 313 - 225 = 88.
-      // Top Position = 50px padding from top.
       ctx.drawImage(img, 88, 50, 450, 450);
 
       // 5. Draw Text (Student Nickname)
       const nickname = getFirstName(student.fullName).toUpperCase();
       
-      // Auto-scale text to fit
       let fontSize = 60;
       ctx.font = `900 ${fontSize}px Inter, sans-serif`;
       
-      // Measure and reduce font size if too wide (max width 550px)
       while (ctx.measureText(nickname).width > 550 && fontSize > 20) {
         fontSize -= 5;
         ctx.font = `900 ${fontSize}px Inter, sans-serif`;
@@ -251,7 +245,6 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
       ctx.fillStyle = '#000000';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      // Position text below QR code (50 + 450 + some padding)
       ctx.fillText(nickname, 313, 550);
 
       // 6. Download
@@ -379,9 +372,13 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
                   <button 
                     type="button"
                     onMouseEnter={() => audio.playHover()}
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(s.id); }}
+                    onClick={(e) => { 
+                      e.preventDefault(); 
+                      e.stopPropagation(); 
+                      handleDelete(s.id); 
+                    }}
                     className="w-12 h-12 bg-white border border-red-100 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-md text-xl cursor-pointer"
-                    title="DELETE RECORD"
+                    title="Delete Student"
                   >
                     🗑️
                   </button>
