@@ -310,17 +310,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       {showRegisterModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-            <div className="bg-pink-500 p-10 text-white relative">
+            <div className="bg-pink-500 p-6 md:p-10 text-white relative">
               <h3 className="text-2xl font-black uppercase tracking-tighter">New Registration</h3>
               <p className="text-pink-100 text-[12px] font-black uppercase tracking-widest opacity-80">
                 Join the Kingdom Kids family
               </p>
               {!newAccessKey && (
-                <button onClick={resetRegForm} className="absolute top-10 right-10 text-white/50 hover:text-white transition-colors text-3xl font-black leading-none">&times;</button>
+                <button onClick={resetRegForm} className="absolute top-6 right-6 md:top-10 md:right-10 text-white/50 hover:text-white transition-colors text-3xl font-black leading-none">&times;</button>
               )}
             </div>
 
-            <div className="p-10">
+            <div className="p-6 md:p-10">
               {newAccessKey ? (
                 <div className="text-center space-y-6 animate-in zoom-in-95 duration-500">
                   <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-4xl shadow-lg border-4 border-white">✓</div>
@@ -342,18 +342,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               ) : (
                 <form onSubmit={handleRegister} className="space-y-6">
                   <div className="space-y-1">
-                    <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1">Student Full Name</label>
+                    <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1">Nickname</label>
                     <input 
                       type="text" 
                       required
-                      placeholder="LAST NAME, FIRST NAME"
+                      placeholder=""
                       className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all uppercase font-bold text-gray-700 text-[12px]"
                       value={formData.fullName}
                       onChange={e => setFormData({ ...formData, fullName: e.target.value.toUpperCase() })}
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1">Birthday</label>
                       <input 
@@ -374,11 +374,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1">Guardian Name</label>
+                    <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1">Guardian Nickname</label>
                     <input 
                       type="text" 
                       required
-                      placeholder="PARENT OR GUARDIAN"
+                      placeholder=""
                       className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all uppercase font-bold text-gray-700 text-[12px]"
                       value={formData.guardianName}
                       onChange={e => setFormData({ ...formData, guardianName: e.target.value.toUpperCase() })}

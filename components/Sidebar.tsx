@@ -42,12 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
       <div className="p-6 overflow-y-auto flex-1">
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-2">
-            <img 
-              src="/app-logo.png"
-              alt="KK"
-              className="w-10 h-10 object-contain"
-            />
-            <h1 className="text-sm font-black text-gray-800 tracking-tighter leading-tight uppercase">Kingdom Kids<br/><span className="text-[10px] text-pink-500 tracking-[0.2em]">Management</span></h1>
+            <h1 className="text-sm font-black text-pink-500 tracking-tighter leading-tight uppercase">Kingdom Kids<br/><span className="text-[10px] text-pink-400 tracking-[0.2em]">Management</span></h1>
           </div>
           <button className="md:hidden text-gray-400" onClick={onClose}>✕</button>
         </div>
