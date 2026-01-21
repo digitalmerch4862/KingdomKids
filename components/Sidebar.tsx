@@ -43,13 +43,9 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-2">
             <img 
-              src="https://drive.google.com/uc?export=view&id=1KTIuQbowa4-0i-1pCGXSmD86mRj7nUNM"
+              src="/app-logo.png"
               alt="KK"
-              className="w-10 h-10 rounded-[1.25rem] object-cover shadow-lg shadow-pink-100 bg-pink-100"
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = "https://ui-avatars.com/api/?name=Kingdom+Kids&background=ec4899&color=fff&size=128&bold=true";
-              }}
+              className="w-10 h-10 object-contain"
             />
             <h1 className="text-sm font-black text-gray-800 tracking-tighter leading-tight uppercase">Kingdom Kids<br/><span className="text-[10px] text-pink-500 tracking-[0.2em]">Management</span></h1>
           </div>
