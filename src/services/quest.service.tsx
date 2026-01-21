@@ -1,29 +1,6 @@
-import { GoogleGenAI, Type } from "@google/genai";
+
 import { db } from '../../services/db.service';
 import { MinistryService } from '../../services/ministry.service';
-
-// Initialize the API using the environment variable per strict guidelines
-const getApiKey = (): string => {
-  // 1. Priority: process.env.API_KEY (Strict Guideline Requirement)
-  try {
-    // @ts-ignore
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-      // @ts-ignore
-      return process.env.API_KEY;
-    }
-  } catch (e) {
-    // Ignore error if process is undefined
-  }
-
-  // 2. Fallback: Vite Environment Variable
-  if (import.meta.env && import.meta.env.VITE_GOOGLE_API_KEY) {
-    return import.meta.env.VITE_GOOGLE_API_KEY as string;
-  }
-  
-  return '';
-};
-
-const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 export interface QuestStory {
   title: string;
@@ -34,12 +11,7 @@ export interface QuestStory {
 
 export class QuestService {
   static async generateStory(studentId: string): Promise<QuestStory> {
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      throw new Error("Missing API Key. Ensure process.env.API_KEY or VITE_GOOGLE_API_KEY is set.");
-    }
-
-    // 1. Fetch Student Data
+    // 1. Fetch Student Data (Client-side DB)
     const student = await db.getStudentById(studentId);
     if (!student) throw new Error("Student not found");
 
@@ -57,54 +29,29 @@ export class QuestService {
     // 3. Fetch History
     const history = await db.getStoryHistory(studentId);
 
-    // 4. Generate Content
-    const promptText = `
-      Create a NEW Bible story for a child.
-      Profile:
-      - Rank: ${rank} (Adjust theological depth: Seed=Simple, Fruit Bearer=Deeper)
-      - Age Group: ${student.ageGroup}
-      
-      EXCLUDE past topics: ${history.join(', ')}.
-      
-      Format: JSON only.
-    `;
+    // 4. Call Backend API
+    const params = new URLSearchParams({
+      rank,
+      ageGroup: student.ageGroup,
+      history: history.join(',')
+    });
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: promptText,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              content: { type: Type.STRING },
-              quiz: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    q: { type: Type.STRING },
-                    options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    a: { type: Type.STRING }
-                  },
-                  required: ["q", "options", "a"]
-                }
-              },
-              story_topic: { type: Type.STRING }
-            },
-            required: ["title", "content", "quiz", "story_topic"]
-          }
+      const response = await fetch(`/api/quest?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         }
       });
 
-      const text = response.text;
-      if (!text) throw new Error("Empty response from AI");
-      
-      const data = JSON.parse(text);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Server Error: ${response.status}`);
+      }
 
-      // 5. Save Topic
+      const data = await response.json();
+
+      // 5. Save Topic (Client-side DB)
       if (data.story_topic) {
         db.addStoryHistory(studentId, data.story_topic).catch(console.error);
       }
@@ -116,8 +63,8 @@ export class QuestService {
         topic: data.story_topic
       };
     } catch (e: any) {
-      console.error("Gemini Error:", e);
-      throw new Error(`AI Generation Failed: ${e.message || 'Unknown error'}`);
+      console.error("Quest Generation Error:", e);
+      throw new Error(`Quest Failed: ${e.message || 'Unknown error'}`);
     }
   }
 
