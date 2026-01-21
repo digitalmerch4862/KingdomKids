@@ -13,7 +13,8 @@ import {
   Castle, 
   Leaf,
   LogOut,
-  X
+  X,
+  Film
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -35,12 +36,14 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
     { label: 'Points Ledger', icon: Star, path: '/admin/points' },
     { label: 'Fairness Monitor', icon: Scale, path: '/admin/fairness' },
     { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
+    { label: 'Superbook', icon: Film, path: '/cinema' },
   ];
 
   const parentItems = [
     { label: 'Student Portal', icon: Castle, path: '/portal' },
     { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
     { label: 'Daily Quest', icon: Leaf, path: '/daily-quest' },
+    { label: 'Superbook', icon: Film, path: '/cinema' },
   ];
 
   const menuItems = isTeacherOrAdmin ? teacherItems : parentItems;
@@ -55,7 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
       <div className="p-6 overflow-y-auto flex-1">
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-2">
-            <h1 className="text-sm font-black text-pink-500 tracking-tighter leading-tight uppercase">Kingdom Kids<br/><span className="text-[10px] text-pink-400 tracking-[0.2em]">Management</span></h1>
+            <h1 className="text-sm font-black text-pink-500 tracking-tighter leading-tight uppercase">Kingdom Kids</h1>
           </div>
           <button className="md:hidden text-gray-400" onClick={onClose}>
             <X size={24} />

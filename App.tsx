@@ -21,6 +21,7 @@ import StudentPortalPage from './pages/StudentPortalPage';
 import AssignmentsPage from './pages/AssignmentsPage';
 import TeacherFairnessPage from './pages/TeacherFairnessPage';
 import DailyQuestPage from './pages/daily-quest';
+import CinemaPage from './pages/CinemaPage';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserSession | null>(null);
@@ -104,6 +105,10 @@ const App: React.FC = () => {
 
           <Route path="/daily-quest" element={
              !user ? <Navigate to="/login" replace /> : (user.role === 'PARENTS' ? <DailyQuestPage user={user} /> : <Navigate to="/admin" replace />)
+          } />
+
+          <Route path="/cinema" element={
+             !user ? <Navigate to="/login" replace /> : <CinemaPage />
           } />
 
           <Route path="/teacher/scan" element={
