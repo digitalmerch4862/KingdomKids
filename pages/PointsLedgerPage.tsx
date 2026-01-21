@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { db, formatError } from '../services/db.service';
 import { PointLedger, Student, UserSession } from '../types';
 import { audio } from '../services/audio.service';
-import { TriangleAlert } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
   const [ledger, setLedger] = useState<(PointLedger & { student?: Student })[]>([]);
@@ -106,7 +106,7 @@ const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
               disabled={isResetting}
               className="px-6 py-3.5 bg-white text-red-500 border border-red-200 hover:bg-red-50 rounded-[1.25rem] font-black transition-all shadow-sm uppercase tracking-widest text-[10px] flex items-center gap-2 group"
             >
-              <TriangleAlert className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <AlertTriangle className="w-4 h-4 group-hover:scale-110 transition-transform" />
               {isResetting ? 'RESETTING...' : 'RESET ALL STARS'}
             </button>
           )}
