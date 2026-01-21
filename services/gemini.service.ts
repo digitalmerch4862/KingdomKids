@@ -88,4 +88,62 @@ export class GeminiService {
       return "KEEP ATTENDING AND MEMORIZING VERSES TO CLIMB THE LEADERBOARD!";
     }
   }
+
+  static async generateDailyQuest(rank: string, pastTopics: string[], ageGroup: string) {
+    try {
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-1.5-flash',
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: SchemaType.OBJECT,
+            properties: {
+              title: { type: SchemaType.STRING },
+              content: { type: SchemaType.STRING },
+              quiz: {
+                type: SchemaType.ARRAY,
+                items: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    q: { type: SchemaType.STRING },
+                    options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                    a: { type: SchemaType.STRING }
+                  },
+                  required: ["q", "options", "a"]
+                }
+              },
+              topic: { type: SchemaType.STRING }
+            },
+            required: ["title", "content", "quiz", "topic"]
+          }
+        }
+      });
+
+      const prompt = `
+        You are a Sunday School teacher. Create a short bible story for a child.
+        Context:
+        - Rank/Level: ${rank} (The higher the rank, the deeper the theological lesson, but keep it simple).
+        - Age Group: ${ageGroup}
+        - Avoid Topics: ${pastTopics.join(', ')}
+
+        Generate a JSON response with:
+        - title: Story Title
+        - content: Story body (approx 80-100 words, kid-friendly language)
+        - quiz: Array of 3 multiple choice questions based on the story.
+        - topic: A short 1-3 word topic identifier (e.g. "Noah", "David", "Faith")
+      `;
+
+      const result = await model.generateContent(prompt);
+      return JSON.parse(result.response.text());
+    } catch (e) {
+      console.error("Quest Generation Error:", e);
+      // Fallback
+      return {
+        title: "The Good Shepherd",
+        content: "Jesus is like a shepherd who takes care of his sheep. We are the sheep! When one sheep gets lost, the shepherd goes to find it. He loves us very much and always watches over us.",
+        quiz: [{q: "Who is the shepherd?", options: ["Jesus", "Moses", "David"], a: "Jesus"}],
+        topic: "Jesus Shepherd"
+      };
+    }
+  }
 }

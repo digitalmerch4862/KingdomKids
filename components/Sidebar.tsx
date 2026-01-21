@@ -3,6 +3,18 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { UserSession } from '../types';
 import { audio } from '../services/audio.service';
+import { 
+  LayoutDashboard, 
+  Camera, 
+  Users, 
+  Star, 
+  Scale, 
+  Trophy, 
+  Castle, 
+  Leaf,
+  LogOut,
+  X
+} from 'lucide-react';
 
 interface SidebarProps {
   user: UserSession | null;
@@ -17,17 +29,18 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
   const isTeacherOrAdmin = user.role === 'TEACHER' || user.role === 'ADMIN';
 
   const teacherItems = [
-    { label: 'Dashboard', icon: '📊', path: '/admin' },
-    { label: 'QR Check-In', icon: '📷', path: '/admin/qr-scan' },
-    { label: 'Students', icon: '👥', path: '/admin/students' },
-    { label: 'Points Ledger', icon: '⭐', path: '/admin/points' },
-    { label: 'Fairness Monitor', icon: '⚖️', path: '/admin/fairness' },
-    { label: 'Leaderboard', icon: '🏆', path: '/leaderboard' },
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+    { label: 'QR Check-In', icon: Camera, path: '/admin/qr-scan' },
+    { label: 'Students', icon: Users, path: '/admin/students' },
+    { label: 'Points Ledger', icon: Star, path: '/admin/points' },
+    { label: 'Fairness Monitor', icon: Scale, path: '/admin/fairness' },
+    { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
   ];
 
   const parentItems = [
-    { label: 'Student Portal', icon: '🏰', path: '/portal' },
-    { label: 'Leaderboard', icon: '🏆', path: '/leaderboard' },
+    { label: 'Student Portal', icon: Castle, path: '/portal' },
+    { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
+    { label: 'Daily Quest', icon: Leaf, path: '/daily-quest' },
   ];
 
   const menuItems = isTeacherOrAdmin ? teacherItems : parentItems;
@@ -44,7 +57,9 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
           <div className="flex items-center gap-2">
             <h1 className="text-sm font-black text-pink-500 tracking-tighter leading-tight uppercase">Kingdom Kids<br/><span className="text-[10px] text-pink-400 tracking-[0.2em]">Management</span></h1>
           </div>
-          <button className="md:hidden text-gray-400" onClick={onClose}>✕</button>
+          <button className="md:hidden text-gray-400" onClick={onClose}>
+            <X size={24} />
+          </button>
         </div>
 
         <nav className="space-y-1.5">
@@ -66,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
                 }`
               }
             >
-              <span className="text-lg opacity-80">{item.icon}</span>
+              <item.icon className="w-5 h-5" strokeWidth={2.5} />
               <span>{item.label}</span>
             </NavLink>
           ))}
@@ -90,7 +105,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
           onClick={() => { audio.playClick(); onLogout(); }}
           className="w-full flex items-center gap-2 px-4 py-3 text-[10px] font-black text-gray-300 hover:text-pink-600 transition-colors uppercase tracking-widest group"
         >
-          <span className="text-base group-hover:scale-110 transition-transform">🚪</span> Sign Out
+          <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
+          <span>Sign Out</span>
         </button>
       </div>
     </aside>

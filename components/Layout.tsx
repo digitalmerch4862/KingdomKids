@@ -51,7 +51,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
         </main>
         
         <footer className="p-6 text-center text-[10px] text-gray-300 uppercase tracking-widest pb-24 md:pb-6">
-          &copy; {new Date().getFullYear()} KINGDOM KIDS Attendance System • Built for Impact
+          &copy; {new Date().getFullYear()} KINGDOM KIDS Attendance System
         </footer>
       </div>
     </div>

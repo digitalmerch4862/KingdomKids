@@ -64,6 +64,30 @@ class DatabaseService {
     }));
   }
 
+  async getStudentById(id: string): Promise<Student | null> {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) return null;
+    return {
+      id: data.id,
+      accessKey: data.access_key,
+      fullName: data.full_name,
+      birthday: data.birthday || '',
+      ageGroup: data.age_group,
+      guardianName: data.guardian_name || '',
+      guardianPhone: data.guardian_phone || '',
+      photoUrl: data.photo_url,
+      isEnrolled: data.is_enrolled,
+      notes: data.notes,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  }
+
   async getStudentByNo(accessKey: string): Promise<Student | null> {
     const { data, error } = await supabase
       .from('students')
@@ -184,9 +208,11 @@ class DatabaseService {
       const paddedSequence = sequence.toString().padStart(2, '0');
       accessKey = `KK-${yyyymmdd}-${paddedSequence}`;
     } else {
-      const year = new Date().getFullYear();
-      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-      accessKey = `KK-${year}-${random}`;
+      // Fallback: Generate key consistent with KK-YYYYMMDD-NN format using today's date
+      const now = new Date();
+      const yyyymmdd = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const random = Math.floor(Math.random() * 99).toString().padStart(2, '0');
+      accessKey = `KK-${yyyymmdd}-${random}`;
     }
 
     const { data: result, error } = await supabase
@@ -358,9 +384,8 @@ class DatabaseService {
     if (error) throw new Error(formatError(error));
   }
 
-  // --- NEW: Reset Season Function (Logic) ---
+  // --- Reset Season Function ---
   async resetSeason(actor: string) {
-    // 1. Mark all currently active points as VOIDED (Soft Delete) to effectively set everyone to 0
     const { error: voidError } = await supabase
       .from('point_ledger')
       .update({ 
@@ -371,7 +396,6 @@ class DatabaseService {
 
     if (voidError) throw new Error(formatError(voidError));
 
-    // 2. Log the event
     await this.log({
       eventType: 'AUDIT_WIPE',
       actor,
@@ -459,6 +483,28 @@ class DatabaseService {
 
     if (error) throw new Error(formatError(error));
     return result;
+  }
+
+  // --- Story History Support ---
+  async getStoryHistory(studentId: string): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('story_history')
+      .select('topic')
+      .eq('student_id', studentId);
+    
+    if (error) {
+       // Table might not exist yet, return empty to fail gracefully
+       return [];
+    }
+    return (data || []).map((row: any) => row.topic);
+  }
+
+  async addStoryHistory(studentId: string, topic: string) {
+    const { error } = await supabase
+      .from('story_history')
+      .insert([{ student_id: studentId, topic }]);
+    
+    if (error) throw new Error(formatError(error));
   }
 }
 

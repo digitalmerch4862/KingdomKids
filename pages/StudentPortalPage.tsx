@@ -37,7 +37,10 @@ const StudentPortalPage: React.FC<{ user: UserSession }> = ({ user }) => {
 
         const leaderboard = await MinistryService.getLeaderboard(me.ageGroup);
         const myEntry = leaderboard.find(e => e.id === me.id);
-        const myRank = leaderboard.findIndex(e => e.id === me.id) + 1;
+        
+        // Rank Logic: If rank > 10, display as 11
+        let myRank = leaderboard.findIndex(e => e.id === me.id) + 1;
+        if (myRank > 10) myRank = 11;
         
         setPoints(myEntry?.totalPoints || 0);
         setRank(myRank);
@@ -157,9 +160,6 @@ const StudentPortalPage: React.FC<{ user: UserSession }> = ({ user }) => {
               </p>
               <div className="absolute -bottom-2 -right-2 text-4xl opacity-10">🤖</div>
             </div>
-            <p className="mt-4 md:mt-6 text-[9px] text-gray-300 font-bold uppercase tracking-widest text-center italic">
-              Powered by Gemini • Updated live based on your progress
-            </p>
           </div>
 
           {/* QR Display */}
@@ -181,12 +181,6 @@ const StudentPortalPage: React.FC<{ user: UserSession }> = ({ user }) => {
               Show this Access QR to your teacher for lightning-fast check-in!
             </p>
             <div className="flex flex-col md:flex-row justify-center gap-3">
-              <button 
-                onClick={() => { audio.playClick(); window.print(); }}
-                className="px-6 md:px-8 py-3 bg-pink-50 text-pink-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-100 transition-all border border-pink-100"
-              >
-                Print Access Card
-              </button>
               <button 
                 onClick={downloadQrCode}
                 className="px-6 md:px-8 py-3 bg-pink-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pink-600 transition-all border border-pink-600 shadow-lg shadow-pink-100"

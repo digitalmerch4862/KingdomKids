@@ -21,7 +21,7 @@ interface LoginPageProps {
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [accessKey, setAccessKey] = useState('');
+  const [accessKey, setAccessKey] = useState('KK-');
   const [role, setRole] = useState<'TEACHER' | 'PARENTS'>('PARENTS');
   const [error, setError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -78,12 +78,32 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
   };
 
+  const handleAccessKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Strip non-digits and limit to 10 digits (8 date + 2 sequence)
+    const raw = e.target.value.replace(/[^0-9]/g, '').substring(0, 10);
+    
+    // Always start with prefix
+    let formatted = 'KK-';
+    
+    // Add first 8 digits (YYYYMMDD)
+    if (raw.length > 0) {
+      formatted += raw.substring(0, 8);
+    }
+    
+    // Add separator and sequence
+    if (raw.length > 8) {
+      formatted += '-' + raw.substring(8);
+    }
+    
+    setAccessKey(formatted);
+  };
+
   const handleParentLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     audio.playClick();
 
-    if (!accessKey) return setError('Access Key is required');
+    if (!accessKey || accessKey.length < 5) return setError('Access Key is required');
 
     setIsVerifying(true);
     try {
@@ -271,8 +291,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     required
                     className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all uppercase font-black text-gray-700 placeholder:text-gray-300 text-center tracking-widest"
                     value={accessKey}
-                    onChange={e => setAccessKey(e.target.value.toUpperCase())}
-                    placeholder="KK-####-###"
+                    onChange={handleAccessKeyChange}
+                    placeholder="KK-########-##"
                   />
                 </div>
 
