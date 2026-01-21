@@ -191,11 +191,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <div 
           className={`fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center transition-opacity duration-500 ease-in-out ${isFading ? 'opacity-0' : 'opacity-100'}`}
         >
-          <img 
-            src="/app-logo.png" 
-            alt="Kingdom Kids Logo"
-            className="w-48 h-48 md:w-64 md:h-64 object-contain mb-8 animate-in zoom-in duration-700"
-          />
+          <h1 className="text-4xl md:text-6xl font-black text-pink-500 uppercase tracking-tighter mb-8 animate-in zoom-in duration-700">
+            Kingdom Kids
+          </h1>
           
           <div className="flex gap-2 items-center animate-in slide-in-from-bottom-4 fade-in duration-700 delay-300">
             <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce"></div>
@@ -208,14 +206,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       <div className="max-w-md w-full">
         <div className="bg-white p-10 rounded-[3rem] shadow-2xl shadow-pink-200/50 border border-pink-50 text-center animate-in fade-in zoom-in-95 duration-500">
           
-          {/* Main Logo */}
-          <img 
-            src="/app-logo.png" 
-            alt="Kingdom Kids" 
-            className="w-40 mx-auto mb-6 object-contain hover:scale-105 transition-transform"
-          />
-
-          <h2 className="text-2xl font-black text-gray-800 mb-2 uppercase tracking-tighter">Kingdom Kids</h2>
+          <h2 className="text-3xl font-black text-pink-500 mb-2 uppercase tracking-tighter">Kingdom Kids</h2>
           <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mb-8">Access Portal</p>
           
           <div className="flex bg-gray-50 p-1 rounded-2xl mb-8">
