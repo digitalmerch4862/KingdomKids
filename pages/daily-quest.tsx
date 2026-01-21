@@ -24,9 +24,13 @@ const DailyQuestPage: React.FC<{ user: UserSession }> = ({ user }) => {
       const data = await QuestService.generateStory(user.studentId);
       setStory(data);
       setGameState('STORY');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Failed to load your quest. Please try again later.");
+      if (err.message && err.message.includes('VITE_GOOGLE_API_KEY')) {
+         setError("System Error: AI Key Missing. Please check settings.");
+      } else {
+         setError("Failed to load your quest. Please try again later.");
+      }
     }
   };
 
@@ -59,9 +63,11 @@ const DailyQuestPage: React.FC<{ user: UserSession }> = ({ user }) => {
 
   if (error) {
     return (
-      <div className="p-10 text-center space-y-4">
+      <div className="p-10 text-center space-y-4 flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="text-4xl">⚠️</div>
         <p className="text-red-500 font-bold uppercase tracking-widest">{error}</p>
         <button onClick={() => window.location.reload()} className="text-pink-500 font-black underline">Reload</button>
+        <Link to="/portal" className="text-gray-400 text-xs font-bold uppercase mt-4">Back to Portal</Link>
       </div>
     );
   }
