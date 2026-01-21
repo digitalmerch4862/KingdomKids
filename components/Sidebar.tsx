@@ -11,6 +11,7 @@ import {
   Scale, 
   Trophy, 
   Castle, 
+  Leaf,
   LogOut,
   X,
   Film
@@ -35,13 +36,14 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
     { label: 'Points Ledger', icon: Star, path: '/admin/points' },
     { label: 'Fairness Monitor', icon: Scale, path: '/admin/fairness' },
     { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
-    { label: 'Superbook', icon: Film, path: '/cinema' },
+    { label: 'Kingdom Cinema', icon: Film, path: '/cinema' },
   ];
 
   const parentItems = [
     { label: 'Student Portal', icon: Castle, path: '/portal' },
     { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
-    { label: 'Superbook', icon: Film, path: '/cinema' },
+    { label: 'Daily Quest', icon: Leaf, path: '/daily-quest' },
+    { label: 'Kingdom Cinema', icon: Film, path: '/cinema' },
   ];
 
   const menuItems = isTeacherOrAdmin ? teacherItems : parentItems;

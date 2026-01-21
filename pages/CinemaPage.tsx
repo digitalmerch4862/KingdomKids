@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Play, X, Star } from 'lucide-react';
 import { audio } from '../services/audio.service';
@@ -9,29 +8,27 @@ interface VideoData {
   youtubeId: string;
 }
 
-// Static data based on SuperbookTV content
+// Verified Superbook Full Episode IDs
 const JESUS_VIDEOS: VideoData[] = [
-  { id: '1', title: 'The Last Supper', youtubeId: 'Gq4oD8gZtMc' },
-  { id: '2', title: 'He Is Risen!', youtubeId: 'K-6f1jQ1y0k' },
-  { id: '3', title: 'Miracles of Jesus', youtubeId: 'Cn8H0fVjZ0k' },
-  { id: '4', title: 'The First Christmas', youtubeId: 'v3y5o_L2kXg' },
+  { id: '1', title: 'The Last Supper', youtubeId: '8gmNl2ZKdY8' },
+  { id: '2', title: 'He Is Risen!', youtubeId: '3F0rt2AiqJY' },
+  { id: '3', title: 'Miracles of Jesus', youtubeId: 'pJ8jIIDlCHQ' },
+  { id: '4', title: 'The First Christmas', youtubeId: 'TqbfIy8ranE' },
 ];
 
 const OT_VIDEOS: VideoData[] = [
-  { id: '5', title: 'David and Goliath', youtubeId: 'N9i0i6K0z0k' },
-  { id: '6', title: 'Daniel in the Lions Den', youtubeId: '2eQ1o6K0z0k' }, // Using placeholders if specifics aren't exact, but structure handles it
-  { id: '7', title: 'The Ten Commandments', youtubeId: '5p4oD8gZtMc' },
-  { id: '8', title: 'In The Beginning', youtubeId: 'M5C45L80F0M' },
+  { id: '5', title: 'David and Goliath', youtubeId: 'jdMq3YAfmO0' },
+  { id: '6', title: 'Daniel in the Lions Den', youtubeId: 'LDtncPpQ61w' },
+  { id: '7', title: 'The Ten Commandments', youtubeId: 'MxoKaPFLIiQ' },
+  { id: '8', title: 'In The Beginning', youtubeId: 'uqG3_eoEYcs' },
 ];
 
-// Fallback real IDs for demo stability if above placeholders fail
-// Using a set of known safe Superbook/Bible cartoon IDs
+// Fallback/Demo data - synchronizing with verified IDs where possible
 const DEMO_VIDEOS = [
-  { id: 'hero', title: 'In The Beginning', youtubeId: 'M5C45L80F0M' },
-  { id: 'j1', title: 'The Miracles of Jesus', youtubeId: '74q8h6q5g4w' }, 
-  { id: 'j2', title: 'The Last Supper', youtubeId: '5p4oD8gZtMc' }, // Placeholder ID logic
-  { id: 'j3', title: 'He is Risen', youtubeId: 'K-6f1jQ1y0k' },
-  { id: 'j4', title: 'Jesus Feeds 5000', youtubeId: 'v=w4q8h6q5g4w' },
+  { id: 'hero', title: 'In The Beginning', youtubeId: 'uqG3_eoEYcs' },
+  { id: 'j1', title: 'Miracles of Jesus', youtubeId: 'pJ8jIIDlCHQ' },
+  { id: 'j2', title: 'The Last Supper', youtubeId: '8gmNl2ZKdY8' },
+  { id: 'j3', title: 'He is Risen', youtubeId: '3F0rt2AiqJY' },
 ];
 
 const CinemaPage: React.FC = () => {
@@ -54,13 +51,19 @@ const CinemaPage: React.FC = () => {
       className="flex-none w-64 md:w-80 relative group cursor-pointer"
     >
       <div className="aspect-video rounded-[2rem] overflow-hidden shadow-lg border-4 border-white group-hover:border-pink-300 transition-all transform group-hover:scale-105 group-hover:shadow-pink-200">
+        {/* Changed to hqdefault for better reliability than maxresdefault, but better quality than mqdefault */}
         <img 
-          src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`} 
+          src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`} 
           alt={video.title}
           className="w-full h-full object-cover"
           onError={(e) => {
-             // Fallback if generic thumbnail fails
-             (e.target as HTMLImageElement).src = 'https://placehold.co/640x360/ec4899/white?text=Superbook';
+             // Fallback to mqdefault if hq doesn't exist (rare), then generic placeholder
+             const target = e.target as HTMLImageElement;
+             if (target.src.includes('hqdefault')) {
+                target.src = `https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`;
+             } else {
+                target.src = 'https://placehold.co/640x360/ec4899/white?text=Kingdom+Cinema';
+             }
           }}
         />
         <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors flex items-center justify-center">
@@ -83,14 +86,15 @@ const CinemaPage: React.FC = () => {
       
       {/* Header */}
       <div>
-        <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tighter">Superbook</h2>
+        <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tighter">Kingdom Cinema</h2>
         <p className="text-gray-400 font-medium uppercase tracking-widest text-[10px]">Watch & Learn with Superbook</p>
       </div>
 
       {/* Hero Section */}
       <div className="relative w-full aspect-[2/1] md:aspect-[3/1] rounded-[3rem] overflow-hidden shadow-2xl shadow-pink-200 group">
+        {/* Using hqdefault for the hero as well to ensure it loads */}
         <img 
-          src={`https://img.youtube.com/vi/${DEMO_VIDEOS[0].youtubeId}/maxresdefault.jpg`}
+          src={`https://img.youtube.com/vi/${DEMO_VIDEOS[0].youtubeId}/hqdefault.jpg`}
           alt="Featured"
           className="w-full h-full object-cover"
         />
@@ -145,7 +149,7 @@ const CinemaPage: React.FC = () => {
               width="100%"
               height="100%"
               src={`https://www.youtube.com/embed/${selectedVideo}?autoplay=1&rel=0&modestbranding=1&showinfo=0`}
-              title="Superbook Player"
+              title="Kingdom Cinema Player"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
