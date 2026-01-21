@@ -1,3 +1,4 @@
+
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
 // Initialize the API using the Vite environment variable with safe access
@@ -16,7 +17,6 @@ const getApiKey = (): string => {
 };
 
 const API_KEY = getApiKey();
-const genAI = new GoogleGenerativeAI(API_KEY);
 
 export class FaceService {
   static async generateEmbedding(base64Image: string): Promise<number[]> {
@@ -27,6 +27,7 @@ export class FaceService {
     }
 
     try {
+      const genAI = new GoogleGenerativeAI(API_KEY);
       // Remove header if present to get pure base64
       const cleanBase64 = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
 
@@ -92,6 +93,7 @@ export class GeminiService {
     if (!API_KEY) return "KEEP SHINING FOR JESUS! (ADD API KEY TO ENABLE AI ADVICE)";
 
     try {
+      const genAI = new GoogleGenerativeAI(API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       
       const prompt = `You are a friendly and encouraging mentor for a child in 'Kingdom Kids' church ministry. 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Play, X, Star } from 'lucide-react';
 import { audio } from '../services/audio.service';
@@ -50,19 +51,15 @@ const CinemaPage: React.FC = () => {
       onMouseEnter={() => audio.playHover()}
       className="flex-none w-64 md:w-80 relative group cursor-pointer"
     >
-      <div className="aspect-video rounded-[2rem] overflow-hidden shadow-lg border-4 border-white group-hover:border-pink-300 transition-all transform group-hover:scale-105 group-hover:shadow-pink-200">
-        {/* Changed to hqdefault for better reliability than maxresdefault, but better quality than mqdefault */}
+      <div className="aspect-video rounded-[2rem] overflow-hidden shadow-lg border-4 border-white group-hover:border-pink-300 transition-all transform group-hover:scale-105 group-hover:shadow-pink-200 bg-gray-200">
         <img 
-          src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`} 
+          src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`} 
           alt={video.title}
           className="w-full h-full object-cover"
           onError={(e) => {
-             // Fallback to mqdefault if hq doesn't exist (rare), then generic placeholder
              const target = e.target as HTMLImageElement;
-             if (target.src.includes('hqdefault')) {
-                target.src = `https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`;
-             } else {
-                target.src = 'https://placehold.co/640x360/ec4899/white?text=Kingdom+Cinema';
+             if (!target.src.includes('placehold.co')) {
+                target.src = 'https://placehold.co/640x360/ec4899/white?text=Superbook';
              }
           }}
         />
@@ -86,29 +83,34 @@ const CinemaPage: React.FC = () => {
       
       {/* Header */}
       <div>
-        <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tighter">Kingdom Cinema</h2>
+        <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tighter">Superbook</h2>
         <p className="text-gray-400 font-medium uppercase tracking-widest text-[10px]">Watch & Learn with Superbook</p>
       </div>
 
       {/* Hero Section */}
-      <div className="relative w-full aspect-[2/1] md:aspect-[3/1] rounded-[3rem] overflow-hidden shadow-2xl shadow-pink-200 group">
-        {/* Using hqdefault for the hero as well to ensure it loads */}
+      <div className="relative w-full aspect-[2/1] md:aspect-[3/1] rounded-[3rem] overflow-hidden shadow-2xl shadow-pink-200 group bg-gray-900">
         <img 
-          src={`https://img.youtube.com/vi/${DEMO_VIDEOS[0].youtubeId}/hqdefault.jpg`}
+          src={`https://img.youtube.com/vi/${DEMO_VIDEOS[0].youtubeId}/sddefault.jpg`}
           alt="Featured"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover opacity-90 group-hover:opacity-80 transition-opacity"
+          onError={(e) => {
+             const target = e.target as HTMLImageElement;
+             if (!target.src.includes('placehold.co')) {
+                target.src = 'https://placehold.co/1280x720/ec4899/white?text=Featured+Movie';
+             }
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-pink-900/80 via-transparent to-transparent flex flex-col justify-end p-8 md:p-12">
-          <span className="bg-pink-500 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mb-3">Featured Movie</span>
+          <span className="bg-pink-500 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mb-3 shadow-lg">Featured Movie</span>
           <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-2 drop-shadow-md">
             In The Beginning
           </h1>
-          <p className="text-white/90 text-xs md:text-sm font-medium max-w-lg mb-6 line-clamp-2 md:line-clamp-none">
+          <p className="text-white/90 text-xs md:text-sm font-medium max-w-lg mb-6 line-clamp-2 md:line-clamp-none drop-shadow-sm">
             Witness the creation of the world and the story of Adam and Eve in this exciting adventure!
           </p>
           <button 
             onClick={() => openVideo(DEMO_VIDEOS[0].youtubeId)}
-            className="flex items-center gap-3 bg-white text-pink-500 px-8 py-4 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-pink-50 transition-all hover:scale-105 active:scale-95 w-fit"
+            className="flex items-center gap-3 bg-white text-pink-500 px-8 py-4 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-pink-50 transition-all hover:scale-105 active:scale-95 w-fit shadow-xl"
           >
             <Play fill="currentColor" size={16} /> Watch Now
           </button>
@@ -149,7 +151,7 @@ const CinemaPage: React.FC = () => {
               width="100%"
               height="100%"
               src={`https://www.youtube.com/embed/${selectedVideo}?autoplay=1&rel=0&modestbranding=1&showinfo=0`}
-              title="Kingdom Cinema Player"
+              title="Superbook Player"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

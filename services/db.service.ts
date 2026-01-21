@@ -485,24 +485,23 @@ class DatabaseService {
     return result;
   }
 
-  // --- Story History Support ---
   async getStoryHistory(studentId: string): Promise<string[]> {
     const { data, error } = await supabase
       .from('story_history')
       .select('topic')
       .eq('student_id', studentId);
     
-    if (error) {
-       // Table might not exist yet, return empty to fail gracefully
-       return [];
-    }
+    if (error) return [];
     return (data || []).map((row: any) => row.topic);
   }
 
   async addStoryHistory(studentId: string, topic: string) {
     const { error } = await supabase
       .from('story_history')
-      .insert([{ student_id: studentId, topic }]);
+      .insert([{
+        student_id: studentId,
+        topic: topic
+      }]);
     
     if (error) throw new Error(formatError(error));
   }
