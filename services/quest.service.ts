@@ -11,32 +11,32 @@ export interface QuestStory {
 
 export class QuestService {
   static async generateStory(studentId: string): Promise<QuestStory> {
-    // 1. Fetch Student Data (Client-side DB)
-    const student = await db.getStudentById(studentId);
-    if (!student) throw new Error("Student not found");
-
-    // 2. Determine Rank
-    const leaderboard = await MinistryService.getLeaderboard(student.ageGroup);
-    const entry = leaderboard.find(e => e.id === studentId);
-    const totalPoints = entry?.totalPoints || 0;
-    
-    let rank = 'Seed';
-    if (totalPoints >= 100) rank = 'Sprout';
-    if (totalPoints >= 300) rank = 'Rooted';
-    if (totalPoints >= 600) rank = 'Branch';
-    if (totalPoints >= 1000) rank = 'Fruit Bearer';
-
-    // 3. Fetch History
-    const history = await db.getStoryHistory(studentId);
-
-    // 4. Call Backend API
-    const params = new URLSearchParams({
-      rank,
-      ageGroup: student.ageGroup,
-      history: history.join(',')
-    });
-
     try {
+      // 1. Fetch Student Data (Client-side DB)
+      const student = await db.getStudentById(studentId);
+      if (!student) throw new Error("Student not found");
+
+      // 2. Determine Rank
+      const leaderboard = await MinistryService.getLeaderboard(student.ageGroup);
+      const entry = leaderboard.find(e => e.id === studentId);
+      const totalPoints = entry?.totalPoints || 0;
+      
+      let rank = 'Seed';
+      if (totalPoints >= 100) rank = 'Sprout';
+      if (totalPoints >= 300) rank = 'Rooted';
+      if (totalPoints >= 600) rank = 'Branch';
+      if (totalPoints >= 1000) rank = 'Fruit Bearer';
+
+      // 3. Fetch History
+      const history = await db.getStoryHistory(studentId);
+
+      // 4. Call Backend API
+      const params = new URLSearchParams({
+        rank,
+        ageGroup: student.ageGroup,
+        history: history.join(',')
+      });
+
       const response = await fetch(`/api/quest?${params.toString()}`, {
         method: 'GET',
         headers: {
@@ -45,8 +45,7 @@ export class QuestService {
       });
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `Server Error: ${response.status}`);
+        throw new Error(`Server Error: ${response.status}`);
       }
 
       const data = await response.json();
@@ -63,8 +62,19 @@ export class QuestService {
         topic: data.story_topic
       };
     } catch (e: any) {
-      console.error("Quest Generation Error:", e);
-      throw new Error(`Quest Failed: ${e.message || 'Unknown error'}`);
+      console.error("Quest Generation Error (Using Fallback):", e);
+      
+      // FALLBACK STORY
+      return {
+        title: "The Lost Sheep",
+        content: "Jesus told a story about a shepherd who had 100 sheep. One day, one got lost! The shepherd left the 99 to find the one lost sheep.\n\nHe searched high and low until he found it. He was so happy! He carried it home on his shoulders.\n\nThis story shows us how much God loves each one of us.",
+        quiz: [{
+          q: "How many sheep did the shepherd have?",
+          options: ["50", "100", "10"],
+          a: "100"
+        }],
+        topic: "The Lost Sheep"
+      };
     }
   }
 
