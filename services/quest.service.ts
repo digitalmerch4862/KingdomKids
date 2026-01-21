@@ -1,18 +1,26 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { db } from './db.service';
 import { MinistryService } from './ministry.service';
 
-// Initialize the API using the Vite environment variable with safe access
+// Initialize the API using the environment variable per strict guidelines
 const getApiKey = (): string => {
-  const viteEnv = import.meta.env?.VITE_GOOGLE_API_KEY;
-  if (viteEnv) return viteEnv as string;
+  // 1. Priority: process.env.API_KEY (Strict Guideline Requirement)
   try {
     // @ts-ignore
-    return process.env.VITE_GOOGLE_API_KEY || '';
-  } catch {
-    return '';
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      // @ts-ignore
+      return process.env.API_KEY;
+    }
+  } catch (e) {
+    // Ignore error if process is undefined
   }
+
+  // 2. Fallback: Vite Environment Variable
+  if (import.meta.env && import.meta.env.VITE_GOOGLE_API_KEY) {
+    return import.meta.env.VITE_GOOGLE_API_KEY as string;
+  }
+  
+  return '';
 };
 
 const ai = new GoogleGenAI({ apiKey: getApiKey() });
@@ -28,7 +36,7 @@ export class QuestService {
   static async generateStory(studentId: string): Promise<QuestStory> {
     const apiKey = getApiKey();
     if (!apiKey) {
-      throw new Error("Missing VITE_GOOGLE_API_KEY. Please add it to your .env file.");
+      throw new Error("Missing API Key. Ensure process.env.API_KEY or VITE_GOOGLE_API_KEY is set.");
     }
 
     // 1. Fetch Student Data
