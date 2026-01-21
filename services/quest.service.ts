@@ -2,8 +2,22 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { db } from './db.service';
 import { MinistryService } from './ministry.service';
 
-// Fix: Cast the environment variable to string to resolve type error (string | boolean issue)
-const API_KEY = (import.meta.env.VITE_GOOGLE_API_KEY as string) || '';
+// Initialize the API using the Vite environment variable with safe access
+const getApiKey = (): string => {
+  // Use optional chaining to prevent crash if import.meta.env is undefined
+  const viteEnv = import.meta.env?.VITE_GOOGLE_API_KEY;
+  if (viteEnv) return viteEnv as string;
+
+  // Fallback for environments where process.env is polyfilled
+  try {
+    // @ts-ignore
+    return process.env.VITE_GOOGLE_API_KEY || '';
+  } catch {
+    return '';
+  }
+};
+
+const API_KEY = getApiKey();
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 export interface QuestStory {
