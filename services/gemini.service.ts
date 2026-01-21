@@ -1,9 +1,12 @@
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
-import { GoogleGenAI, Type } from "@google/genai";
-
+// Initialize the API using the Vite environment variable with safe access
 const getApiKey = (): string => {
+  // Use optional chaining to handle cases where import.meta.env might be undefined
   const viteEnv = import.meta.env?.VITE_GOOGLE_API_KEY;
   if (viteEnv) return viteEnv as string;
+
+  // Fallback for environments where process.env is polyfilled
   try {
     // @ts-ignore
     return process.env.VITE_GOOGLE_API_KEY || '';
@@ -12,53 +15,58 @@ const getApiKey = (): string => {
   }
 };
 
-const ai = new GoogleGenAI({ apiKey: getApiKey() });
+const API_KEY = getApiKey();
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 export class FaceService {
   static async generateEmbedding(base64Image: string): Promise<number[]> {
-    const apiKey = getApiKey();
-    if (!apiKey) {
+    if (!API_KEY) {
       console.error("VITE_GOOGLE_API_KEY is missing");
+      // Fallback for demo without key
       return Array.from({ length: 128 }, () => Math.random());
     }
 
     try {
+      // Remove header if present to get pure base64
       const cleanBase64 = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                mimeType: 'image/jpeg',
-                data: cleanBase64
-              }
-            },
-            { text: "Generate a unique 128-float array representation (embedding) of the person's face in this image. Ensure the output is JUST a JSON array of 128 floats." }
-          ]
-        },
-        config: {
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        generationConfig: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.ARRAY,
-            items: { type: Type.NUMBER }
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.NUMBER }
           }
         }
       });
 
-      const text = response.text;
-      if (!text) throw new Error("No response from AI");
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: cleanBase64
+          }
+        },
+        { text: "Generate a unique 128-float array representation (embedding) of the person's face in this image. Ensure the output is JUST a JSON array of 128 floats." }
+      ]);
+
+      const response = result.response;
+      const text = response.text();
       
-      const arr = JSON.parse(text);
+      const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const arr = JSON.parse(jsonStr);
+      
       if (!Array.isArray(arr)) throw new Error("Gemini did not return an array");
       
+      // Normalize to 128 length
       const resultArr = arr.slice(0, 128).map(v => typeof v === 'number' ? v : 0);
       while (resultArr.length < 128) resultArr.push(0);
       
       return resultArr;
     } catch (error) {
       console.error("Embedding Generation Error:", error);
+      // Return a random embedding as fallback to prevent crash during demo/offline
       return Array.from({ length: 128 }, () => Math.random());
     }
   }
@@ -81,22 +89,20 @@ export class FaceService {
 
 export class GeminiService {
   static async getStudentAdvice(points: number, rank: number, ageGroup: string, name: string): Promise<string> {
-    const apiKey = getApiKey();
-    if (!apiKey) return "KEEP SHINING FOR JESUS! (ADD API KEY TO ENABLE AI ADVICE)";
+    if (!API_KEY) return "KEEP SHINING FOR JESUS! (ADD API KEY TO ENABLE AI ADVICE)";
 
     try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      
       const prompt = `You are a friendly and encouraging mentor for a child in 'Kingdom Kids' church ministry. 
         The child, ${name}, has ${points} points and is ranked #${rank} in the ${ageGroup} age group. 
         Give 3 short, specific, fun, and biblical tips on how they can earn more points 
         (like memorizing verses, helping others, being early, or participation) and grow in their faith. 
         Keep the output in ALL CAPS, very positive, and kid-friendly (short sentences).`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt
-      });
-
-      return response.text || "KEEP SHINING FOR JESUS! YOU ARE DOING AMAZING!";
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      return response.text() || "KEEP SHINING FOR JESUS! YOU ARE DOING AMAZING!";
     } catch (e) {
       console.error("Advice Generation Error:", e);
       return "KEEP ATTENDING AND MEMORIZING VERSES TO CLIMB THE LEADERBOARD!";
