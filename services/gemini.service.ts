@@ -1,8 +1,8 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Initialize the API using the process env variable as per guidelines
-const ai = new GoogleGenAI(import.meta.env.VITE_GOOGLE_API_KEY);
+// Initialize the API using the process environment variable as per guidelines
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export class FaceService {
   static async generateEmbedding(base64Image: string): Promise<number[]> {
@@ -16,7 +16,6 @@ export class FaceService {
       // Remove header if present to get pure base64
       const cleanBase64 = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
 
-      // Use gemini-3-flash-preview for efficiency and JSON capability
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: {
@@ -41,13 +40,12 @@ export class FaceService {
 
       const text = response.text || "[]";
       
-      const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      const arr = JSON.parse(jsonStr);
+      const arr = JSON.parse(text);
       
       if (!Array.isArray(arr)) throw new Error("Gemini did not return an array");
       
       // Normalize to 128 length
-      const resultArr = arr.slice(0, 128).map((v: any) => typeof v === 'number' ? v : 0);
+      const resultArr = arr.slice(0, 128).map(v => typeof v === 'number' ? v : 0);
       while (resultArr.length < 128) resultArr.push(0);
       
       return resultArr;
@@ -89,6 +87,7 @@ export class GeminiService {
         model: 'gemini-3-flash-preview',
         contents: prompt
       });
+
       return response.text || "KEEP SHINING FOR JESUS! YOU ARE DOING AMAZING!";
     } catch (e) {
       console.error("Advice Generation Error:", e);

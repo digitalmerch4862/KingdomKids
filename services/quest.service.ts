@@ -3,7 +3,6 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { db } from './db.service';
 import { MinistryService } from './ministry.service';
 
-// Initialize the API using process.env.API_KEY as per guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export interface QuestStory {
@@ -23,7 +22,7 @@ export class QuestService {
     const student = await db.getStudentById(studentId);
     if (!student) throw new Error("Student not found");
 
-    // 2. Fetch/Calculate Rank (Simulating kingdom_kids_profiles.current_rank by points)
+    // 2. Fetch/Calculate Rank
     const leaderboard = await MinistryService.getLeaderboard(student.ageGroup);
     const entry = leaderboard.find(e => e.id === studentId);
     const totalPoints = entry?.totalPoints || 0;
@@ -77,7 +76,8 @@ export class QuestService {
               }
             },
             story_topic: { type: Type.STRING }
-          }
+          },
+          required: ["title", "content", "quiz", "story_topic"]
         }
       }
     });
@@ -87,7 +87,6 @@ export class QuestService {
 
     // 5. Save Topic to Supabase to prevent repeats
     if (data.story_topic) {
-      // We don't await this to keep UI snappy, unless strict consistency is needed
       db.addStoryHistory(studentId, data.story_topic).catch(console.error);
     }
 
