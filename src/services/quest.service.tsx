@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { db } from './db.service';
 import { MinistryService } from './ministry.service';

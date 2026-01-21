@@ -27,9 +27,9 @@ const DailyQuestPage: React.FC<{ user: UserSession }> = ({ user }) => {
     } catch (err: any) {
       console.error(err);
       if (err.message && err.message.includes('VITE_GOOGLE_API_KEY')) {
-         setError("System Error: AI Key Missing. Please check settings.");
+         setError("SYSTEM ERROR: AI KEY MISSING in .env file.");
       } else {
-         setError("Failed to load your quest. Please try again later.");
+         setError(`FAILED TO LOAD QUEST: ${err.message}`);
       }
     }
   };
@@ -63,11 +63,19 @@ const DailyQuestPage: React.FC<{ user: UserSession }> = ({ user }) => {
 
   if (error) {
     return (
-      <div className="p-10 text-center space-y-4 flex flex-col items-center justify-center min-h-[50vh]">
+      <div className="p-10 text-center space-y-6 flex flex-col items-center justify-center min-h-[50vh]">
         <div className="text-4xl">⚠️</div>
-        <p className="text-red-500 font-bold uppercase tracking-widest">{error}</p>
-        <button onClick={() => window.location.reload()} className="text-pink-500 font-black underline">Reload</button>
-        <Link to="/portal" className="text-gray-400 text-xs font-bold uppercase mt-4">Back to Portal</Link>
+        <div>
+          <h2 className="text-xl font-black text-gray-800 mb-2">Something went wrong</h2>
+          <p className="text-red-500 font-bold uppercase tracking-widest text-xs max-w-md mx-auto">{error}</p>
+        </div>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="bg-pink-500 text-white px-8 py-3 rounded-full font-black uppercase tracking-widest text-xs shadow-lg hover:bg-pink-600 transition-all"
+        >
+          Try Again
+        </button>
+        <Link to="/portal" className="text-gray-400 text-xs font-bold uppercase hover:text-gray-600">Back to Portal</Link>
       </div>
     );
   }
