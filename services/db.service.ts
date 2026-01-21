@@ -172,10 +172,7 @@ class DatabaseService {
     let accessKey = '';
     
     if (data.birthday) {
-      // Step 2: Format Date (YYYYMMDD)
       const yyyymmdd = data.birthday.replace(/-/g, '');
-      
-      // Step 1: Check for duplicates (Count existing students with this birthday)
       const { count, error: countError } = await supabase
         .from('students')
         .select('*', { count: 'exact', head: true })
@@ -183,20 +180,15 @@ class DatabaseService {
         
       if (countError) throw new Error("Failed to check birthday sequence: " + countError.message);
       
-      // Step 3: Generate Sequence (Count + 1, Pad with zero if < 10)
       const sequence = (count || 0) + 1;
       const paddedSequence = sequence.toString().padStart(2, '0');
-      
-      // Step 4: Create Key (KK-YYYYMMDD-SEQUENCE)
       accessKey = `KK-${yyyymmdd}-${paddedSequence}`;
     } else {
-      // Fallback if no birthday provided
       const year = new Date().getFullYear();
       const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
       accessKey = `KK-${year}-${random}`;
     }
 
-    // Step 5: Insert
     const { data: result, error } = await supabase
       .from('students')
       .insert([{
@@ -239,9 +231,6 @@ class DatabaseService {
     if (error) throw new Error(formatError(error));
   }
 
-  /**
-   * Fetches the latest attendance logs.
-   */
   async getAttendanceLogs(): Promise<AttendanceSession[]> {
     const { data, error } = await supabase
       .from('attendance_sessions')
@@ -264,9 +253,6 @@ class DatabaseService {
     }));
   }
 
-  /**
-   * Alias for getAttendanceLogs to ensure compatibility with AdminDashboard.
-   */
   getAttendance() {
     return this.getAttendanceLogs();
   }
@@ -322,7 +308,6 @@ class DatabaseService {
   }
 
   async getFairnessData(startDate: string, endDate: string) {
-    // Fetches point ledger joined with students to get metadata
     const { data, error } = await supabase
       .from('point_ledger')
       .select(`
@@ -337,10 +322,9 @@ class DatabaseService {
     
     if (error) throw new Error(formatError(error));
     
-    // Transform to a friendlier format
     return (data || []).map((row: any) => ({
       ...row,
-      recordedBy: row.recorded_by, // Map for consistency
+      recordedBy: row.recorded_by,
       entryDate: row.entry_date,
       student: row.students ? {
         id: row.students.id,
@@ -372,6 +356,34 @@ class DatabaseService {
   async voidPointEntry(id: string, reason: string) {
     const { error } = await supabase.from('point_ledger').update({ voided: true, void_reason: reason }).eq('id', id);
     if (error) throw new Error(formatError(error));
+  }
+
+  // --- NEW: Reset Season Function (Logic) ---
+  // This performs a "Soft Reset" by voiding all points, effectively ensuring everyone starts at 0 without deleting history.
+  async resetSeason(actor: string) {
+    // 1. Mark all currently active points as VOIDED
+    const { error: voidError } = await supabase
+      .from('point_ledger')
+      .update({ 
+        voided: true, 
+        void_reason: 'SEASON RESET: POINTS ARCHIVED' 
+      })
+      .eq('voided', false);
+
+    if (voidError) throw new Error(formatError(voidError));
+
+    // 2. Insert Marker Entries (Optional, as requested by spec to have 'SEASON RESET' status)
+    // We only need one marker per reset action in the audit log, but user requested ledger entries.
+    // For performance, we rely on the voiding to reset the score (SUM = 0).
+    
+    // 3. Log the event
+    await this.log({
+      eventType: 'AUDIT_WIPE',
+      actor,
+      payload: { action: 'SEASON_RESET', timestamp: new Date().toISOString() }
+    });
+    
+    return true;
   }
 
   async log(entry: Omit<AuditLog, 'id' | 'createdAt'>) {

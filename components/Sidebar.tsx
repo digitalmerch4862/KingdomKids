@@ -3,6 +3,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { UserSession } from '../types';
 import { audio } from '../services/audio.service';
+import { LayoutDashboard, QrCode, Users, Star, Scale, Trophy, DoorOpen } from 'lucide-react';
 
 interface SidebarProps {
   user: UserSession | null;
@@ -17,17 +18,17 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
   const isTeacherOrAdmin = user.role === 'TEACHER' || user.role === 'ADMIN';
 
   const teacherItems = [
-    { label: 'Dashboard', icon: '📊', path: '/admin' },
-    { label: 'QR Check-In', icon: '📷', path: '/admin/qr-scan' },
-    { label: 'Students', icon: '👥', path: '/admin/students' },
-    { label: 'Points Ledger', icon: '⭐', path: '/admin/points' },
-    { label: 'Fairness Monitor', icon: '⚖️', path: '/admin/fairness' },
-    { label: 'Leaderboard', icon: '🏆', path: '/leaderboard' },
+    { label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, path: '/admin' },
+    { label: 'QR Check-In', icon: <QrCode className="w-5 h-5" />, path: '/admin/qr-scan' },
+    { label: 'Students', icon: <Users className="w-5 h-5" />, path: '/admin/students' },
+    { label: 'Points Ledger', icon: <Star className="w-5 h-5 fill-current" />, path: '/admin/points' },
+    { label: 'Fairness Monitor', icon: <Scale className="w-5 h-5" />, path: '/admin/fairness' },
+    { label: 'Leaderboard', icon: <Trophy className="w-5 h-5" />, path: '/leaderboard' },
   ];
 
   const parentItems = [
-    { label: 'Student Portal', icon: '🏰', path: '/portal' },
-    { label: 'Leaderboard', icon: '🏆', path: '/leaderboard' },
+    { label: 'Student Portal', icon: <Users className="w-5 h-5" />, path: '/portal' },
+    { label: 'Leaderboard', icon: <Trophy className="w-5 h-5" />, path: '/leaderboard' },
   ];
 
   const menuItems = isTeacherOrAdmin ? teacherItems : parentItems;
@@ -75,7 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
                 }`
               }
             >
-              <span className="text-lg opacity-80">{item.icon}</span>
+              <span className="opacity-80">{item.icon}</span>
               <span>{item.label}</span>
             </NavLink>
           ))}
@@ -99,7 +100,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
           onClick={() => { audio.playClick(); onLogout(); }}
           className="w-full flex items-center gap-2 px-4 py-3 text-[10px] font-black text-gray-300 hover:text-pink-600 transition-colors uppercase tracking-widest group"
         >
-          <span className="text-base group-hover:scale-110 transition-transform">🚪</span> Sign Out
+          <DoorOpen className="w-4 h-4 group-hover:scale-110 transition-transform" />
+          Sign Out
         </button>
       </div>
     </aside>
