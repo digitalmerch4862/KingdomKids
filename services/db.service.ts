@@ -484,29 +484,6 @@ class DatabaseService {
     if (error) throw new Error(formatError(error));
     return result;
   }
-
-  async getStoryHistory(studentId: string): Promise<string[]> {
-    const { data, error } = await supabase
-      .from('quest_history')
-      .select('topic')
-      .eq('student_id', studentId);
-    
-    if (error) {
-      // Return empty if table doesn't exist to prevent crashes
-      return [];
-    }
-    return (data || []).map((r: any) => r.topic);
-  }
-
-  async addStoryHistory(studentId: string, topic: string) {
-    const { error } = await supabase
-      .from('quest_history')
-      .insert([{ student_id: studentId, topic: topic }]);
-    
-    if (error) {
-      console.warn("Failed to add story history:", error.message);
-    }
-  }
 }
 
 export const db = new DatabaseService();
