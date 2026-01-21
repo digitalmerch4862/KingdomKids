@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { db, formatError } from '../services/db.service';
 import { PointLedger, Student, UserSession } from '../types';
 import { audio } from '../services/audio.service';
-import { TriangleAlert, CheckCircle, Ban } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 
 const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
   const [ledger, setLedger] = useState<(PointLedger & { student?: Student })[]>([]);
@@ -35,7 +35,6 @@ const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
   }, []);
 
   const handleVoid = async (id: string) => {
-    audio.playClick();
     const reason = window.prompt("Enter reason for voiding these points:");
     if (reason === null) return;
     
@@ -81,7 +80,7 @@ const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
   if (loading && !isResetting) return <div className="p-10 text-center animate-pulse font-black text-pink-300 uppercase">Loading Ledger...</div>;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
+    <div className="space-y-8 animate-in fade-in duration-500">
       
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -91,16 +90,13 @@ const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
-          <div className="relative">
-             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-             <input 
-              type="text" 
-              placeholder="SEARCH BY STUDENT OR CATEGORY..." 
-              className="pl-10 px-6 py-3.5 bg-white border border-pink-50 rounded-[1.25rem] outline-none focus:ring-2 focus:ring-pink-200 text-[10px] font-black tracking-tight uppercase w-full md:w-80 shadow-sm"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          <input 
+            type="text" 
+            placeholder="SEARCH BY STUDENT OR CATEGORY..." 
+            className="px-6 py-3.5 bg-white border border-pink-50 rounded-[1.25rem] outline-none focus:ring-2 focus:ring-pink-200 text-[10px] font-black tracking-tight uppercase w-full md:w-80 shadow-sm"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
           
           {/* Specific Reset Button as requested */}
           {isAdmin && (
@@ -136,7 +132,7 @@ const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
                 const isNegative = entry.points < 0;
                 
                 return (
-                  <tr key={entry.id} className={`hover:bg-pink-50/20 transition-colors ${entry.voided ? 'opacity-40 bg-gray-50/50' : ''}`}>
+                  <tr key={entry.id} className={`hover:bg-pink-50/20 transition-colors ${entry.voided ? 'opacity-40' : ''}`}>
                     {/* Date */}
                     <td className="px-8 py-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                       {entry.entryDate}
@@ -181,27 +177,18 @@ const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
                     {/* Status */}
                     <td className="px-8 py-6 text-right">
                       {entry.voided ? (
-                        <div className="flex items-center justify-end gap-1 text-gray-300">
-                          <Ban className="w-3 h-3" />
-                          <span className="text-[9px] font-black uppercase tracking-widest">
-                            [ VOID ]
-                          </span>
-                        </div>
+                        <span className="text-gray-300 text-[9px] font-black uppercase tracking-widest border border-gray-100 px-2 py-1 rounded">
+                          [ VOID ]
+                        </span>
                       ) : (
-                        <div className="flex items-center justify-end gap-2">
-                           {isAdmin && (
-                            <button 
-                                onClick={() => handleVoid(entry.id)}
-                                className="text-[9px] font-black text-gray-300 hover:text-red-500 uppercase tracking-widest transition-colors flex items-center gap-1"
-                            >
-                                <span className="text-xs">🗑️</span> VOID
-                            </button>
-                           )}
-                           <div className="flex items-center gap-1 text-green-500">
-                              <CheckCircle className="w-3 h-3" />
-                              <span className="text-[9px] font-black uppercase tracking-widest">[ VALID ]</span>
-                           </div>
-                        </div>
+                        isAdmin && (
+                          <button 
+                            onClick={() => handleVoid(entry.id)}
+                            className="text-[9px] font-black text-gray-300 hover:text-red-500 uppercase tracking-widest transition-colors"
+                          >
+                            [ VOID ]
+                          </button>
+                        )
                       )}
                     </td>
                   </tr>

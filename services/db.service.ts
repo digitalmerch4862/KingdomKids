@@ -359,9 +359,8 @@ class DatabaseService {
   }
 
   // --- NEW: Reset Season Function (Logic) ---
-  // This performs a "Soft Reset" by voiding all points, effectively ensuring everyone starts at 0 without deleting history.
   async resetSeason(actor: string) {
-    // 1. Mark all currently active points as VOIDED
+    // 1. Mark all currently active points as VOIDED (Soft Delete) to effectively set everyone to 0
     const { error: voidError } = await supabase
       .from('point_ledger')
       .update({ 
@@ -372,11 +371,7 @@ class DatabaseService {
 
     if (voidError) throw new Error(formatError(voidError));
 
-    // 2. Insert Marker Entries (Optional, as requested by spec to have 'SEASON RESET' status)
-    // We only need one marker per reset action in the audit log, but user requested ledger entries.
-    // For performance, we rely on the voiding to reset the score (SUM = 0).
-    
-    // 3. Log the event
+    // 2. Log the event
     await this.log({
       eventType: 'AUDIT_WIPE',
       actor,
