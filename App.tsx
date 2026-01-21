@@ -20,7 +20,6 @@ import PointsLedgerPage from './pages/PointsLedgerPage';
 import StudentPortalPage from './pages/StudentPortalPage';
 import AssignmentsPage from './pages/AssignmentsPage';
 import TeacherFairnessPage from './pages/TeacherFairnessPage';
-import DailyQuestPage from './pages/daily-quest';
 import CinemaPage from './pages/CinemaPage';
 
 const App: React.FC = () => {
@@ -101,10 +100,6 @@ const App: React.FC = () => {
 
           <Route path="/portal" element={
              !user ? <Navigate to="/login" replace /> : (user.role === 'PARENTS' ? <StudentPortalPage user={user} /> : <Navigate to="/admin" replace />)
-          } />
-
-          <Route path="/daily-quest" element={
-             !user ? <Navigate to="/login" replace /> : (user.role === 'PARENTS' ? <DailyQuestPage user={user} /> : <Navigate to="/admin" replace />)
           } />
 
           <Route path="/cinema" element={

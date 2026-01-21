@@ -1,4 +1,5 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+
+import { GoogleGenAI, Type } from "@google/genai";
 import { db } from './db.service';
 import { MinistryService } from './ministry.service';
 
@@ -18,7 +19,6 @@ const getApiKey = (): string => {
 };
 
 const API_KEY = getApiKey();
-const genAI = new GoogleGenerativeAI(API_KEY);
 
 export interface QuestStory {
   title: string;
@@ -32,6 +32,8 @@ export class QuestService {
     if (!API_KEY) {
       throw new Error("Missing VITE_GOOGLE_API_KEY in environment variables");
     }
+
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     // 1. Fetch Student
     const student = await db.getStudentById(studentId);
@@ -53,34 +55,6 @@ export class QuestService {
     const history = await db.getStoryHistory(studentId);
 
     // 4. Gemini Generation
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: SchemaType.OBJECT,
-          properties: {
-            title: { type: SchemaType.STRING },
-            content: { type: SchemaType.STRING },
-            quiz: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  q: { type: SchemaType.STRING },
-                  options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-                  a: { type: SchemaType.STRING }
-                },
-                required: ["q", "options", "a"]
-              }
-            },
-            story_topic: { type: SchemaType.STRING }
-          },
-          required: ["title", "content", "quiz", "story_topic"]
-        }
-      }
-    });
-
     const prompt = `
       Create a NEW Bible story for a child.
       Profile:
@@ -96,8 +70,36 @@ export class QuestService {
       - story_topic: Unique 1-3 word identifier for this story topic (e.g. "Daniel Lions", "Moses Red Sea").
     `;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            content: { type: Type.STRING },
+            quiz: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  q: { type: Type.STRING },
+                  options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  a: { type: Type.STRING }
+                },
+                required: ["q", "options", "a"]
+              }
+            },
+            story_topic: { type: Type.STRING }
+          },
+          required: ["title", "content", "quiz", "story_topic"]
+        }
+      }
+    });
+
+    const text = response.text || "{}";
     const data = JSON.parse(text);
 
     // 5. Save Topic to Supabase to prevent repeats

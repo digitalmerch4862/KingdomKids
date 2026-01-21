@@ -11,7 +11,6 @@ import {
   Scale, 
   Trophy, 
   Castle, 
-  Leaf,
   LogOut,
   X,
   Film
@@ -42,7 +41,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, onClose }) =>
   const parentItems = [
     { label: 'Student Portal', icon: Castle, path: '/portal' },
     { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
-    { label: 'Daily Quest', icon: Leaf, path: '/daily-quest' },
     { label: 'Superbook', icon: Film, path: '/cinema' },
   ];
 

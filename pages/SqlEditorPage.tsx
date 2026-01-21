@@ -163,15 +163,7 @@ CREATE TABLE IF NOT EXISTS point_ledger (
   created_at timestamptz DEFAULT now()
 );
 
--- 5. Story History Table (For Daily Quest)
-CREATE TABLE IF NOT EXISTS story_history (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id uuid REFERENCES students(id) ON DELETE CASCADE,
-  topic text NOT NULL,
-  completed_at timestamptz DEFAULT now()
-);
-
--- 6. RPC Function for SQL Editor
+-- 5. RPC Function for SQL Editor
 -- Support both SELECT and COMMANDS
 CREATE OR REPLACE FUNCTION exec_sql(query_text text)
 RETURNS jsonb
