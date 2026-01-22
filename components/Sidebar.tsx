@@ -66,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
   const parentItems: SidebarItem[] = [
     { label: 'KidsFlix', icon: PlayCircle, path: '/kidsflix' },
     { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
-    { label: 'FB Page', icon: Facebook, path: 'https://www.facebook.com', isExternal: true },
+    { label: 'FB Feed', icon: Facebook, path: '/facebook' }, // Changed to internal route
   ];
 
   const menuItems = isTeacherOrAdmin ? teacherItems : parentItems;

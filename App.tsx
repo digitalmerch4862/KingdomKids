@@ -23,6 +23,7 @@ import TeacherFairnessPage from './pages/TeacherFairnessPage';
 import FollowUpPage from './pages/FollowUpPage';
 import CinemaPage from './pages/CinemaPage';
 import ControlCenterPage from './pages/ControlCenterPage';
+import FacebookPage from './pages/FacebookPage';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserSession | null>(null);
@@ -110,6 +111,10 @@ const App: React.FC = () => {
 
           <Route path="/kidsflix" element={
             !user ? <Navigate to="/login" replace /> : <CinemaPage />
+          } />
+
+          <Route path="/facebook" element={
+            !user ? <Navigate to="/login" replace /> : <FacebookPage />
           } />
 
           <Route path="/portal" element={
