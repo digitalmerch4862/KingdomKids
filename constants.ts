@@ -26,6 +26,6 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 
 export const AUTH_PASSWORDS = {
   ADMIN: '6244',
-  TEACHER: '123',
+  TEACHER: 'pro226',
   PARENTS: '123'
 };

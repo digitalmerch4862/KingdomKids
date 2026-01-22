@@ -60,7 +60,11 @@ class DatabaseService {
       isEnrolled: s.is_enrolled,
       notes: s.notes,
       createdAt: s.created_at,
-      updatedAt: s.updated_at
+      updatedAt: s.updated_at,
+      consecutiveAbsences: s.consecutive_absences || 0,
+      studentStatus: s.student_status || 'active',
+      lastFollowupSent: s.last_followup_sent,
+      guardianNickname: s.guardian_nickname
     }));
   }
 
@@ -84,7 +88,11 @@ class DatabaseService {
       isEnrolled: data.is_enrolled,
       notes: data.notes,
       createdAt: data.created_at,
-      updatedAt: data.updated_at
+      updatedAt: data.updated_at,
+      consecutiveAbsences: data.consecutive_absences || 0,
+      studentStatus: data.student_status || 'active',
+      lastFollowupSent: data.last_followup_sent,
+      guardianNickname: data.guardian_nickname
     };
   }
 
@@ -108,7 +116,11 @@ class DatabaseService {
       isEnrolled: data.is_enrolled,
       notes: data.notes,
       createdAt: data.created_at,
-      updatedAt: data.updated_at
+      updatedAt: data.updated_at,
+      consecutiveAbsences: data.consecutive_absences || 0,
+      studentStatus: data.student_status || 'active',
+      lastFollowupSent: data.last_followup_sent,
+      guardianNickname: data.guardian_nickname
     };
   }
 
@@ -192,7 +204,7 @@ class DatabaseService {
     }
   }
 
-  async addStudent(data: Omit<Student, 'id' | 'createdAt' | 'updatedAt' | 'isEnrolled' | 'accessKey'>) {
+  async addStudent(data: Omit<Student, 'id' | 'createdAt' | 'updatedAt' | 'isEnrolled' | 'accessKey' | 'consecutiveAbsences' | 'studentStatus'>) {
     let accessKey = '';
     
     if (data.birthday) {
@@ -208,7 +220,6 @@ class DatabaseService {
       const paddedSequence = sequence.toString().padStart(2, '0');
       accessKey = `KK-${yyyymmdd}-${paddedSequence}`;
     } else {
-      // Fallback: Generate key consistent with KK-YYYYMMDD-NN format using today's date
       const now = new Date();
       const yyyymmdd = now.toISOString().slice(0, 10).replace(/-/g, '');
       const random = Math.floor(Math.random() * 99).toString().padStart(2, '0');
@@ -226,7 +237,9 @@ class DatabaseService {
         guardian_phone: data.guardianPhone || null,
         photo_url: data.photoUrl,
         notes: data.notes,
-        is_enrolled: false
+        is_enrolled: false,
+        consecutive_absences: 0,
+        student_status: 'active'
       }])
       .select()
       .single();
@@ -245,6 +258,10 @@ class DatabaseService {
     if (updates.photoUrl !== undefined) payload.photo_url = updates.photoUrl;
     if (updates.isEnrolled !== undefined) payload.is_enrolled = updates.isEnrolled;
     if (updates.notes !== undefined) payload.notes = updates.notes;
+    if (updates.consecutiveAbsences !== undefined) payload.consecutive_absences = updates.consecutiveAbsences;
+    if (updates.studentStatus !== undefined) payload.student_status = updates.studentStatus;
+    if (updates.lastFollowupSent !== undefined) payload.last_followup_sent = updates.lastFollowupSent;
+    if (updates.guardianNickname !== undefined) payload.guardian_nickname = updates.guardianNickname;
     
     payload.updated_at = new Date().toISOString();
 
@@ -255,6 +272,32 @@ class DatabaseService {
   async deleteStudent(id: string) {
     const { error } = await supabase.from('students').delete().eq('id', id);
     if (error) throw new Error(formatError(error));
+  }
+
+  // --- Follow-Up System Methods ---
+
+  async resetStudentAbsences(studentId: string) {
+    // Reset absences and ensure active status upon check-in
+    const { error } = await supabase
+      .from('students')
+      .update({ 
+        consecutive_absences: 0, 
+        student_status: 'active',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', studentId);
+    
+    if (error) console.error("Failed to reset absences:", formatError(error));
+  }
+
+  async recordFollowUp(studentId: string, actor: string) {
+    await this.updateStudent(studentId, { lastFollowupSent: new Date().toISOString() });
+    await this.log({
+      eventType: 'FOLLOWUP_SENT',
+      actor,
+      entityId: studentId,
+      payload: { timestamp: new Date().toISOString() }
+    });
   }
 
   async getAttendanceLogs(): Promise<AttendanceSession[]> {
@@ -333,6 +376,31 @@ class DatabaseService {
     }));
   }
 
+  async getStudentLedger(studentId: string, limit = 5): Promise<PointLedger[]> {
+    const { data, error } = await supabase
+      .from('point_ledger')
+      .select('*')
+      .eq('student_id', studentId)
+      .eq('voided', false)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    if (error) throw new Error(formatError(error));
+
+    return (data || []).map(l => ({
+      id: l.id,
+      studentId: l.student_id,
+      entryDate: l.entry_date,
+      category: l.category,
+      points: l.points,
+      notes: l.notes,
+      recordedBy: l.recorded_by,
+      voided: l.voided,
+      voidReason: l.void_reason,
+      createdAt: l.created_at
+    }));
+  }
+
   async getFairnessData(startDate: string, endDate: string) {
     const { data, error } = await supabase
       .from('point_ledger')
@@ -384,7 +452,6 @@ class DatabaseService {
     if (error) throw new Error(formatError(error));
   }
 
-  // --- Reset Season Function ---
   async resetSeason(actor: string) {
     const { error: voidError } = await supabase
       .from('point_ledger')
@@ -439,6 +506,24 @@ class DatabaseService {
       autoCheckoutTime: data.auto_checkout_time,
       allowDuplicatePoints: data.allow_duplicate_points
     };
+  }
+
+  async updateSettings(updates: Partial<AppSettings>) {
+    // Attempt to get current ID first, else default
+    const current = await this.getSettings();
+    const id = current.id === 'default' ? 'global-settings' : current.id;
+    
+    const payload: any = {};
+    if (updates.matchThreshold !== undefined) payload.match_threshold = updates.matchThreshold;
+    if (updates.autoCheckoutTime !== undefined) payload.auto_checkout_time = updates.autoCheckoutTime;
+    if (updates.allowDuplicatePoints !== undefined) payload.allow_duplicate_points = updates.allowDuplicatePoints;
+
+    const { error } = await supabase.from('app_settings').upsert({
+      id: id,
+      ...payload
+    }, { onConflict: 'id' });
+
+    if (error) throw new Error(formatError(error));
   }
 
   async getRules(): Promise<PointRule[]> {

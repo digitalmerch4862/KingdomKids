@@ -60,6 +60,31 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     };
   }, []);
 
+  // --- Logic: Auto-Login Verification ---
+  const performAccessKeyLogin = async (key: string) => {
+    setIsVerifying(true);
+    setError('');
+    
+    // Artificial delay for UX (so user sees the last digit they typed)
+    await new Promise(r => setTimeout(r, 400));
+
+    try {
+      const student = await db.getStudentByNo(key);
+      if (student) {
+        audio.playYehey();
+        // Use first name for the username in the session so sidebar/portal addresses them by first name
+        onLogin('PARENTS', getFirstName(student.fullName).toUpperCase(), student.id);
+      } else {
+        audio.playClick(); // Error sound cue (using click for now)
+        setError('INVALID ACCESS KEY');
+      }
+    } catch (err) {
+      setError('Connection failed. Try again.');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -67,18 +92,30 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
     if (!username) return setError('Username is required');
 
+    const normalizedUser = username.trim().toUpperCase();
+
     if (role === 'TEACHER') {
-      if (password === AUTH_PASSWORDS.ADMIN) {
-        onLogin('ADMIN', username.toUpperCase());
-      } else if (password === AUTH_PASSWORDS.TEACHER) {
-        onLogin('TEACHER', username.toUpperCase());
-      } else {
+      // Rule 1: Specific User Access (RAD) - Admin
+      // Only 'RAD' with the correct admin password gets ADMIN access
+      if (normalizedUser === 'RAD' && password === AUTH_PASSWORDS.ADMIN) {
+        onLogin('ADMIN', normalizedUser);
+      } 
+      // Rule 2: General Teacher Access - Teacher
+      // Any username with the correct teacher password gets TEACHER access
+      else if (password === AUTH_PASSWORDS.TEACHER) {
+        onLogin('TEACHER', normalizedUser);
+      } 
+      // Rule 3: Failure
+      else {
         setError('Invalid password for Teacher');
       }
     }
   };
 
   const handleAccessKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Reset error when typing
+    if (error) setError('');
+
     // Strip non-digits and limit to 10 digits (8 date + 2 sequence)
     const raw = e.target.value.replace(/[^0-9]/g, '').substring(0, 10);
     
@@ -96,29 +133,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
     
     setAccessKey(formatted);
+
+    // AUTO-LOGIN TRIGGER
+    // Full format: KK-YYYYMMDD-XX (3 + 8 + 1 + 2 = 14 chars)
+    if (formatted.length === 14) {
+      performAccessKeyLogin(formatted);
+    }
   };
 
-  const handleParentLogin = async (e: React.FormEvent) => {
+  const handleParentLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     audio.playClick();
-
-    if (!accessKey || accessKey.length < 5) return setError('Access Key is required');
-
-    setIsVerifying(true);
-    try {
-      const student = await db.getStudentByNo(accessKey);
-      if (student) {
-        // Use first name for the username in the session so sidebar/portal addresses them by first name
-        onLogin('PARENTS', getFirstName(student.fullName).toUpperCase(), student.id);
-      } else {
-        setError('Invalid Access Key. Please check your registry.');
-      }
-    } catch (err) {
-      setError('Verification failed. Try again.');
-    } finally {
-      setIsVerifying(false);
-    }
+    if (!accessKey || accessKey.length < 14) return setError('Incomplete Access Key');
+    performAccessKeyLogin(accessKey);
   };
 
   // Registration Logic
@@ -283,28 +310,32 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             </form>
           ) : (
             <div className="space-y-6">
-              <form onSubmit={handleParentLogin} className="space-y-5 animate-in fade-in duration-300">
+              <form onSubmit={handleParentLoginSubmit} className="space-y-5 animate-in fade-in duration-300">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-center">Access Key</label>
                   <input 
                     type="text" 
                     required
-                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all uppercase font-black text-gray-700 placeholder:text-gray-300 text-center tracking-widest"
+                    disabled={isVerifying}
+                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all uppercase font-black text-gray-700 placeholder:text-gray-300 text-center tracking-widest disabled:opacity-50"
                     value={accessKey}
                     onChange={handleAccessKeyChange}
                     placeholder="KK-########-##"
                   />
+                  <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest text-center">
+                    {isVerifying ? 'VERIFYING KEY...' : 'AUTO-VERIFY ENABLED'}
+                  </p>
                 </div>
 
-                {error && <p className="text-red-500 text-[10px] font-black uppercase tracking-widest text-center mt-2">{error}</p>}
+                {error && <div className="p-3 bg-red-50 rounded-xl animate-in shake"><p className="text-red-500 text-[10px] font-black uppercase tracking-widest text-center">{error}</p></div>}
 
                 <button 
                   type="submit"
                   disabled={isVerifying}
                   onMouseEnter={() => audio.playHover()}
-                  className="w-full bg-pink-500 hover:bg-pink-600 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-pink-100 uppercase tracking-widest text-xs mt-4 active:scale-[0.98] disabled:opacity-50"
+                  className="w-full bg-pink-500 hover:bg-pink-600 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-pink-100 uppercase tracking-widest text-xs mt-4 active:scale-[0.98] disabled:opacity-50 disabled:bg-gray-300"
                 >
-                  {isVerifying ? 'VERIFYING...' : 'ENTER KINGDOM DASHBOARD'}
+                  {isVerifying ? 'CONNECTING...' : 'ENTER KINGDOM DASHBOARD'}
                 </button>
               </form>
 
@@ -321,6 +352,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               >
                 ✨ Sign Up My Kids
               </button>
+              
+              <div className="mt-2 text-center">
+                <button 
+                  type="button"
+                  onClick={() => { audio.playClick(); onLogin('PARENTS', 'GUEST', 'GUEST_DEMO'); }}
+                  className="text-[10px] font-bold text-gray-300 hover:text-pink-500 uppercase tracking-widest transition-colors border-b border-transparent hover:border-pink-300"
+                >
+                  Continue as Guest
+                </button>
+              </div>
             </div>
           )}
         </div>

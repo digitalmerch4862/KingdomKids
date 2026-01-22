@@ -1,157 +1,202 @@
-
 import React, { useState } from 'react';
-import { Play, X, Star } from 'lucide-react';
+import { Play, X, Info, ChevronRight, Plus } from 'lucide-react';
 import { audio } from '../services/audio.service';
 
 interface VideoData {
   id: string;
   title: string;
+  description?: string;
   youtubeId: string;
+  duration?: string;
+  thumbnail?: string;
 }
 
-// Verified Superbook Full Episode IDs
-const JESUS_VIDEOS: VideoData[] = [
-  { id: '1', title: 'The Last Supper', youtubeId: '8gmNl2ZKdY8' },
-  { id: '2', title: 'He Is Risen!', youtubeId: '3F0rt2AiqJY' },
-  { id: '3', title: 'Miracles of Jesus', youtubeId: 'pJ8jIIDlCHQ' },
-  { id: '4', title: 'The First Christmas', youtubeId: 'TqbfIy8ranE' },
-];
+// "The Biggest Story" Themed Content - Hero Video (The full animated short film)
+const HERO_VIDEO: VideoData = {
+  id: 'hero',
+  title: 'The Biggest Story',
+  description: 'The Bible is full of exciting stories that fill us with awe and wonder. But this is the biggest story of all—the story of the Snake Crusher.',
+  youtubeId: 'MOXqKj6j9kU',
+  thumbnail: 'https://img.youtube.com/vi/MOXqKj6j9kU/maxresdefault.jpg'
+};
 
+// Official videos from "The Biggest Story" Old Testament Playlist
 const OT_VIDEOS: VideoData[] = [
-  { id: '5', title: 'David and Goliath', youtubeId: 'jdMq3YAfmO0' },
-  { id: '6', title: 'Daniel in the Lions Den', youtubeId: 'LDtncPpQ61w' },
-  { id: '7', title: 'The Ten Commandments', youtubeId: 'MxoKaPFLIiQ' },
-  { id: '8', title: 'In The Beginning', youtubeId: 'uqG3_eoEYcs' },
+  { id: 'ot1', title: 'Chapter 1: And So It Begins', youtubeId: 'FAzQIA_rF1s', duration: '4m' },
+  { id: 'ot2', title: 'Chapter 2: A Very Bad Day', youtubeId: 'OTRfS7N9NIY', duration: '4m' },
+  { id: 'ot3', title: 'Chapter 3: From Bad to Worse', youtubeId: 'jjcut2pkV5I', duration: '4m' },
+  { id: 'ot4', title: 'Chapter 4: Rain, Rain, Go Away', youtubeId: '-0nQgt1bwEU', duration: '4m' },
+  { id: 'ot12', title: 'Chapter 12: Joseph\'s Mean Brothers', youtubeId: '5BQFsj-xNNQ', duration: '4m' },
 ];
 
-// Fallback/Demo data - synchronizing with verified IDs where possible
-const DEMO_VIDEOS = [
-  { id: 'hero', title: 'In The Beginning', youtubeId: 'uqG3_eoEYcs' },
-  { id: 'j1', title: 'Miracles of Jesus', youtubeId: 'pJ8jIIDlCHQ' },
-  { id: 'j2', title: 'The Last Supper', youtubeId: '8gmNl2ZKdY8' },
-  { id: 'j3', title: 'He is Risen', youtubeId: '3F0rt2AiqJY' },
+// Official videos from "The Biggest Story" New Testament Playlist
+const NT_VIDEOS: VideoData[] = [
+  { id: 'nt60', title: 'Chapter 60: Follow the Leader', youtubeId: '5-VO3vS7bnM', duration: '4m' },
+  { id: 'nt78', title: 'Chapter 78: Jesus Cleans House', youtubeId: 'DJ29DfRKNHQ', duration: '4m' },
+  { id: 'nt80', title: 'Chapter 80: A Meal for the Ages', youtubeId: 'SdGoaqOafnk', duration: '4m' },
+  { id: 'nt82', title: 'Chapter 82: The Snake Crusher Is Crushed', youtubeId: 'gUGwzomWe28', duration: '5m' },
+  { id: 'nt104', title: 'Chapter 104: All Things New', youtubeId: 'N31dtIRIVOo', duration: '4m' },
 ];
 
 const CinemaPage: React.FC = () => {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
   const openVideo = (youtubeId: string) => {
-    audio.playClick();
+    // audio.playClick(); // Uncomment if audio service is available
     setSelectedVideo(youtubeId);
   };
 
   const closeVideo = () => {
-    audio.playClick();
+    // audio.playClick(); // Uncomment if audio service is available
     setSelectedVideo(null);
+  };
+
+  // Mock audio calls for the template if service isn't present
+  const playHover = () => {
+    // audio.playHover(); 
   };
 
   const ThumbnailCard: React.FC<{ video: VideoData }> = ({ video }) => (
     <div 
       onClick={() => openVideo(video.youtubeId)}
-      onMouseEnter={() => audio.playHover()}
-      className="flex-none w-64 md:w-80 relative group cursor-pointer"
+      onMouseEnter={playHover}
+      className="flex-none w-48 md:w-64 relative group cursor-pointer transition-all duration-300 hover:z-20 hover:scale-105 origin-center"
     >
-      <div className="aspect-video rounded-[2rem] overflow-hidden shadow-lg border-4 border-white group-hover:border-pink-300 transition-all transform group-hover:scale-105 group-hover:shadow-pink-200 bg-gray-200">
+      <div className="aspect-video rounded-md overflow-hidden shadow-lg bg-[#202020] border border-transparent group-hover:border-white/20 relative">
         <img 
           src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`} 
           alt={video.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
           onError={(e) => {
              const target = e.target as HTMLImageElement;
-             if (!target.src.includes('placehold.co')) {
-                target.src = 'https://placehold.co/640x360/ec4899/white?text=Superbook';
-             }
+             target.src = 'https://placehold.co/640x360/1f2937/white?text=Biggest+Story';
           }}
         />
-        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors flex items-center justify-center">
-          <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center text-pink-500 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-4 group-hover:translate-y-0">
-            <Play fill="currentColor" size={20} className="ml-1" />
-          </div>
+        {/* Play Icon Overlay */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+           <div className="w-10 h-10 rounded-full border-2 border-white/80 flex items-center justify-center text-white backdrop-blur-sm">
+             <Play size={16} fill="white" className="ml-1" />
+           </div>
+        </div>
+        
+        {/* Progress/Duration Bar Mockup */}
+        <div className="absolute bottom-0 inset-x-0 h-0.5 bg-gray-700 group-hover:h-1 transition-all">
+          <div className="w-1/3 h-full bg-red-600"></div>
         </div>
       </div>
-      <div className="mt-3 px-2">
-        <h4 className="text-gray-800 font-black text-xs uppercase tracking-tight truncate">{video.title}</h4>
-        <div className="flex items-center gap-1 text-[9px] text-pink-400 font-bold uppercase tracking-widest mt-0.5">
-           <Star size={10} fill="currentColor" /> Popular
+      
+      <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity absolute top-full inset-x-0 bg-[#141414] p-3 rounded-b-md shadow-xl z-30 -translate-y-1">
+        <h4 className="text-white font-bold text-[10px] uppercase tracking-wide leading-tight mb-2">{video.title}</h4>
+        <div className="flex items-center justify-between text-[9px] text-gray-400">
+          <span>{video.duration}</span>
+          <div className="flex gap-2">
+            <div className="p-1 border border-gray-600 rounded-full hover:border-white hover:text-white transition-colors"><Plus size={10} /></div>
+            <div className="p-1 border border-gray-600 rounded-full hover:border-white hover:text-white transition-colors"><ChevronRight size={10} /></div>
+          </div>
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
+    <div className="bg-[#141414] min-h-[calc(100vh-6rem)] rounded-[2.5rem] p-6 md:p-8 text-white shadow-2xl relative overflow-hidden animate-in fade-in duration-500">
       
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-black text-gray-800 uppercase tracking-tighter">Superbook</h2>
-        <p className="text-gray-400 font-medium uppercase tracking-widest text-[10px]">Watch & Learn with Superbook</p>
+      {/* Navbar Mockup */}
+      <div className="flex items-center justify-between mb-8 relative z-20">
+        <div className="flex items-center gap-6">
+          <div className="text-red-600 font-black text-2xl tracking-tighter uppercase">KIDSFLIX</div>
+          <div className="hidden md:flex gap-4 text-[10px] font-bold text-gray-300 uppercase tracking-widest">
+            <span className="text-white cursor-pointer">Home</span>
+            <span className="hover:text-white cursor-pointer transition-colors">Series</span>
+            <span className="hover:text-white cursor-pointer transition-colors">Movies</span>
+            <span className="hover:text-white cursor-pointer transition-colors">My List</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+           <div className="text-gray-400 hover:text-white cursor-pointer"><Info size={20} /></div>
+        </div>
       </div>
 
       {/* Hero Section */}
-      <div className="relative w-full aspect-[2/1] md:aspect-[3/1] rounded-[3rem] overflow-hidden shadow-2xl shadow-pink-200 group bg-gray-900">
+      <div className="relative w-full aspect-[4/3] md:aspect-[2.35/1] rounded-2xl overflow-hidden shadow-2xl bg-gray-900 mb-10 group">
         <img 
-          src={`https://img.youtube.com/vi/${DEMO_VIDEOS[0].youtubeId}/sddefault.jpg`}
+          src={HERO_VIDEO.thumbnail}
           alt="Featured"
-          className="w-full h-full object-cover opacity-90 group-hover:opacity-80 transition-opacity"
-          onError={(e) => {
-             const target = e.target as HTMLImageElement;
-             if (!target.src.includes('placehold.co')) {
-                target.src = 'https://placehold.co/1280x720/ec4899/white?text=Featured+Movie';
-             }
-          }}
+          className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity duration-1000 scale-105 group-hover:scale-100"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-pink-900/80 via-transparent to-transparent flex flex-col justify-end p-8 md:p-12">
-          <span className="bg-pink-500 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest w-fit mb-3 shadow-lg">Featured Movie</span>
-          <h1 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-2 drop-shadow-md">
-            In The Beginning
-          </h1>
-          <p className="text-white/90 text-xs md:text-sm font-medium max-w-lg mb-6 line-clamp-2 md:line-clamp-none drop-shadow-sm">
-            Witness the creation of the world and the story of Adam and Eve in this exciting adventure!
-          </p>
-          <button 
-            onClick={() => openVideo(DEMO_VIDEOS[0].youtubeId)}
-            className="flex items-center gap-3 bg-white text-pink-500 px-8 py-4 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-pink-50 transition-all hover:scale-105 active:scale-95 w-fit shadow-xl"
-          >
-            <Play fill="currentColor" size={16} /> Watch Now
-          </button>
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#141414] via-[#141414]/20 to-transparent flex flex-col justify-end p-6 md:p-12">
+          <div className="max-w-2xl animate-in slide-in-from-bottom-10 duration-700 space-y-4">
+             <div className="flex items-center gap-3 mb-2">
+                <div className="w-6 h-6 bg-red-600 flex items-center justify-center font-black text-[10px] rounded-sm">N</div>
+                <span className="text-gray-300 text-[10px] font-bold uppercase tracking-[0.2em]">Series</span>
+             </div>
+             <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter drop-shadow-xl leading-none">
+               The Biggest Story
+             </h1>
+             <p className="text-gray-200 text-xs md:text-sm font-medium line-clamp-3 md:line-clamp-none leading-relaxed max-w-lg drop-shadow-md">
+               {HERO_VIDEO.description}
+             </p>
+             
+             <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={() => openVideo(HERO_VIDEO.youtubeId)}
+                  className="flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded font-bold uppercase tracking-wide text-xs hover:bg-white/90 transition-all active:scale-95"
+                >
+                  <Play fill="currentColor" size={18} /> Play
+                </button>
+                <button className="flex items-center gap-2 bg-gray-500/40 backdrop-blur-md text-white px-6 py-2.5 rounded font-bold uppercase tracking-wide text-xs hover:bg-gray-500/60 transition-all active:scale-95">
+                  <Info size={18} /> More Info
+                </button>
+             </div>
+          </div>
         </div>
       </div>
 
-      {/* Row 1: Life of Jesus */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest px-2 border-l-4 border-pink-500 pl-3">The Life of Jesus</h3>
-        <div className="flex overflow-x-auto gap-6 pb-6 pt-2 px-2 custom-scrollbar snap-x">
-          {JESUS_VIDEOS.map(video => (
-            <ThumbnailCard key={video.id} video={video} />
-          ))}
+      {/* Content Rows */}
+      <div className="space-y-8 relative z-10 px-2 pb-20">
+        
+        {/* Row 1: Old Testament */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold text-gray-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1 group">
+            Old Testament Stories <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+          </h3>
+          <div className="flex overflow-x-auto gap-3 pb-4 pt-2 custom-scrollbar snap-x">
+            {OT_VIDEOS.map(video => (
+              <ThumbnailCard key={video.id} video={video} />
+            ))}
+          </div>
         </div>
+
+        {/* Row 2: New Testament */}
+        <div className="space-y-3">
+           <h3 className="text-sm font-bold text-gray-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1 group">
+            New Testament Stories <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+          </h3>
+          <div className="flex overflow-x-auto gap-3 pb-4 pt-2 custom-scrollbar snap-x">
+            {NT_VIDEOS.map(video => (
+              <ThumbnailCard key={video.id} video={video} />
+            ))}
+          </div>
+        </div>
+
       </div>
 
-      {/* Row 2: OT Heroes */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest px-2 border-l-4 border-pink-500 pl-3">Old Testament Heroes</h3>
-        <div className="flex overflow-x-auto gap-6 pb-6 pt-2 px-2 custom-scrollbar snap-x">
-          {OT_VIDEOS.map(video => (
-            <ThumbnailCard key={video.id} video={video} />
-          ))}
-        </div>
-      </div>
-
-      {/* Video Player Modal */}
+      {/* Video Player Overlay */}
       {selectedVideo && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="relative w-full max-w-5xl aspect-video bg-black rounded-[2rem] overflow-hidden shadow-2xl border-4 border-gray-800">
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="relative w-full max-w-6xl aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
             <button 
               onClick={closeVideo}
-              className="absolute top-4 right-4 z-50 bg-black/50 hover:bg-pink-500 text-white p-3 rounded-full backdrop-blur-sm transition-all"
+              className="absolute top-4 right-4 z-50 bg-black/50 hover:bg-white hover:text-black text-white p-2 rounded-full backdrop-blur-md transition-all border border-white/10"
             >
               <X size={24} />
             </button>
             <iframe
               width="100%"
               height="100%"
-              src={`https://www.youtube.com/embed/${selectedVideo}?autoplay=1&rel=0&modestbranding=1&showinfo=0`}
-              title="Superbook Player"
+              src={`https://www.youtube.com/embed/${selectedVideo}?autoplay=1&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&fs=1`}
+              title="The Biggest Story Player"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -163,18 +208,7 @@ const CinemaPage: React.FC = () => {
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
-          height: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(236, 72, 153, 0.05);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #fbcfe8;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #f472b6;
+          height: 0px;
         }
       `}</style>
     </div>

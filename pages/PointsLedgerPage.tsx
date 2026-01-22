@@ -9,7 +9,6 @@ const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
   const [ledger, setLedger] = useState<(PointLedger & { student?: Student })[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isResetting, setIsResetting] = useState(false);
 
   const isAdmin = user.role === 'ADMIN';
 
@@ -46,30 +45,6 @@ const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
     }
   };
 
-  const handleResetSeason = async () => {
-    audio.playClick();
-    
-    // Step 1: Confirmation
-    if (!window.confirm("⚠️ ARE YOU SURE?\n\nThis will reset ALL student points to 0 for the new season.\nThis action archives existing points and cannot be undone.")) {
-      return;
-    }
-
-    setIsResetting(true);
-    try {
-      // Step 2: Perform Batch Update (Soft Reset)
-      await db.resetSeason(user.username);
-      
-      // Step 3: Toast / Alert
-      audio.playYehey();
-      alert("✅ All student points have been reset to 0.");
-      loadLedger();
-    } catch (err) {
-      alert("Reset failed: " + formatError(err));
-    } finally {
-      setIsResetting(false);
-    }
-  };
-
   const filtered = useMemo(() => {
     return ledger.filter(l => 
       l.student?.fullName.toLowerCase().includes(search.toLowerCase()) ||
@@ -77,7 +52,7 @@ const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
     );
   }, [ledger, search]);
 
-  if (loading && !isResetting) return <div className="p-10 text-center animate-pulse font-black text-pink-300 uppercase">Loading Ledger...</div>;
+  if (loading) return <div className="p-10 text-center animate-pulse font-black text-pink-300 uppercase">Loading Ledger...</div>;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -97,19 +72,6 @@ const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          
-          {/* Specific Reset Button as requested */}
-          {isAdmin && (
-            <button
-              onMouseEnter={() => audio.playHover()}
-              onClick={handleResetSeason}
-              disabled={isResetting}
-              className="px-6 py-3.5 bg-white text-red-500 border border-red-200 hover:bg-red-50 rounded-[1.25rem] font-black transition-all shadow-sm uppercase tracking-widest text-[10px] flex items-center gap-2 group"
-            >
-              <AlertTriangle className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              {isResetting ? 'RESETTING...' : 'RESET ALL STARS'}
-            </button>
-          )}
         </div>
       </div>
 
@@ -135,7 +97,7 @@ const PointsLedgerPage: React.FC<{ user: UserSession }> = ({ user }) => {
                   <tr key={entry.id} className={`hover:bg-pink-50/20 transition-colors ${entry.voided ? 'opacity-40' : ''}`}>
                     {/* Date */}
                     <td className="px-8 py-6 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      {entry.entryDate}
+                      {new Date(entry.entryDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </td>
                     
                     {/* Student */}

@@ -4,6 +4,7 @@ export type UserRole = "ADMIN" | "TEACHER" | "PARENTS";
 export type FaceAngle = "front" | "left" | "right";
 export type CheckoutMode = "MANUAL" | "AUTO";
 export type SessionStatus = "OPEN" | "CLOSED";
+export type StudentStatus = "active" | "frozen";
 
 export interface Student {
   id: string;
@@ -18,6 +19,11 @@ export interface Student {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  // Follow-Up System Fields
+  consecutiveAbsences: number;
+  studentStatus: StudentStatus;
+  lastFollowupSent?: string;
+  guardianNickname?: string;
 }
 
 export interface FaceEmbedding {
@@ -77,7 +83,7 @@ export interface AppSettings {
 
 export interface AuditLog {
   id: string;
-  eventType: 'CHECKIN' | 'CHECKOUT_AUTO' | 'CHECKOUT_MANUAL' | 'FACE_UNKNOWN' | 'POINT_ADD' | 'POINT_VOID' | 'ENROLLMENT' | 'AUDIT_WIPE';
+  eventType: 'CHECKIN' | 'CHECKOUT_AUTO' | 'CHECKOUT_MANUAL' | 'FACE_UNKNOWN' | 'POINT_ADD' | 'POINT_VOID' | 'ENROLLMENT' | 'AUDIT_WIPE' | 'ABSENCE_SWEEP' | 'FOLLOWUP_SENT';
   actor: string;
   entityId?: string;
   payload: any;
@@ -90,7 +96,6 @@ export interface UserSession {
   studentId?: string; // For Parent/Student portal
 }
 
-// Fix: Added missing Assignment interface to resolve export errors in assignments feature components.
 export interface Assignment {
   id: string;
   teacherName: string;

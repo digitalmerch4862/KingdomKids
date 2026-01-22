@@ -20,7 +20,9 @@ import PointsLedgerPage from './pages/PointsLedgerPage';
 import StudentPortalPage from './pages/StudentPortalPage';
 import AssignmentsPage from './pages/AssignmentsPage';
 import TeacherFairnessPage from './pages/TeacherFairnessPage';
+import FollowUpPage from './pages/FollowUpPage';
 import CinemaPage from './pages/CinemaPage';
+import ControlCenterPage from './pages/ControlCenterPage';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserSession | null>(null);
@@ -58,6 +60,10 @@ const App: React.FC = () => {
             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <AdminDashboard activity={activity} /> : <Navigate to="/portal" replace />)
           } />
 
+          <Route path="/admin/control-center" element={
+             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <ControlCenterPage /> : <Navigate to="/portal" replace />)
+          } />
+
           <Route path="/admin/students" element={
             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <StudentsPage user={user} /> : <Navigate to="/portal" replace />)
           } />
@@ -76,6 +82,10 @@ const App: React.FC = () => {
 
           <Route path="/admin/fairness" element={
              !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <TeacherFairnessPage /> : <Navigate to="/portal" replace />)
+          } />
+
+          <Route path="/admin/follow-up" element={
+             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <FollowUpPage user={user} /> : <Navigate to="/portal" replace />)
           } />
 
           <Route path="/admin/enrollment" element={
@@ -98,12 +108,12 @@ const App: React.FC = () => {
             !user ? <Navigate to="/login" replace /> : <LeaderboardPage />
           } />
 
-          <Route path="/portal" element={
-             !user ? <Navigate to="/login" replace /> : (user.role === 'PARENTS' ? <StudentPortalPage user={user} /> : <Navigate to="/admin" replace />)
+          <Route path="/biggest-story" element={
+            !user ? <Navigate to="/login" replace /> : <CinemaPage />
           } />
 
-          <Route path="/cinema" element={
-             !user ? <Navigate to="/login" replace /> : <CinemaPage />
+          <Route path="/portal" element={
+             !user ? <Navigate to="/login" replace /> : (user.role === 'PARENTS' ? <StudentPortalPage user={user} /> : <Navigate to="/admin" replace />)
           } />
 
           <Route path="/teacher/scan" element={

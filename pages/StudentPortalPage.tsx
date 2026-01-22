@@ -29,6 +29,34 @@ const StudentPortalPage: React.FC<{ user: UserSession }> = ({ user }) => {
     async function loadPortal() {
       if (!user.studentId) return;
       
+      // Guest Demo Handling
+      if (user.studentId === 'GUEST_DEMO') {
+        const guestStudent: Student = {
+          id: 'guest-demo',
+          accessKey: 'GUEST-000',
+          fullName: 'Guest Visitor',
+          birthday: '2018-01-01',
+          ageGroup: '3-6',
+          guardianName: 'Guest Parent',
+          guardianPhone: '09000000000',
+          isEnrolled: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          consecutiveAbsences: 0,
+          studentStatus: 'active'
+        };
+        setStudent(guestStudent);
+        setPoints(100);
+        setRank(1);
+        setHistory([
+          { id: '1', studentId: 'guest-demo', entryDate: new Date().toISOString(), category: 'Welcome Bonus', points: 50, recordedBy: 'System', voided: false, createdAt: new Date().toISOString() },
+          { id: '2', studentId: 'guest-demo', entryDate: new Date().toISOString(), category: 'Memory Verse', points: 50, recordedBy: 'System', voided: false, createdAt: new Date().toISOString() }
+        ]);
+        setAdvice("WELCOME TO KINGDOM KIDS! THIS IS A PREVIEW OF THE STUDENT PORTAL. FEEL FREE TO EXPLORE!");
+        setLoading(false);
+        return;
+      }
+
       try {
         const students = await db.getStudents();
         const me = students.find(s => s.id === user.studentId);

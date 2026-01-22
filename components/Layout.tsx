@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { UserSession } from '../types';
 import Sidebar from './Sidebar';
+import { PanelLeft } from 'lucide-react';
+import { audio } from '../services/audio.service';
 
 interface LayoutProps {
   user: UserSession | null;
@@ -11,6 +13,12 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
+
+  const toggleDesktopSidebar = () => {
+    audio.playClick();
+    setIsDesktopSidebarOpen(!isDesktopSidebarOpen);
+  };
 
   return (
     <div className="min-h-screen bg-[#FDF8FA] flex flex-col md:flex-row">
@@ -29,7 +37,7 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
         </div>
       )}
 
-      {/* Sidebar Overlay */}
+      {/* Sidebar Overlay (Mobile) */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[55] md:hidden"
@@ -41,10 +49,25 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
         user={user} 
         onLogout={onLogout} 
         isOpen={isMobileMenuOpen} 
+        isDesktopOpen={isDesktopSidebarOpen}
         onClose={() => setIsMobileMenuOpen(false)} 
       />
       
-      <div className={`flex-1 flex flex-col ${user ? 'md:pl-64' : ''}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${user && isDesktopSidebarOpen ? 'md:pl-64' : 'md:pl-0'}`}>
+        
+        {/* Desktop Sidebar Toggle */}
+        {user && (
+          <div className="hidden md:flex p-4 pb-0 items-center">
+            <button 
+              onClick={toggleDesktopSidebar}
+              className="p-2 text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-xl transition-all"
+              title={isDesktopSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
+            >
+              <PanelLeft size={20} />
+            </button>
+          </div>
+        )}
+
         {/* Adjusted padding for mobile vs desktop */}
         <main className="flex-1 p-4 md:p-10 w-full max-w-7xl mx-auto">
           <Outlet />

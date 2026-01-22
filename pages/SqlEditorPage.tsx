@@ -123,8 +123,18 @@ CREATE TABLE IF NOT EXISTS students (
   is_enrolled boolean DEFAULT false,
   notes text,
   created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
+  updated_at timestamptz DEFAULT now(),
+  consecutive_absences integer DEFAULT 0,
+  student_status text DEFAULT 'active',
+  last_followup_sent timestamptz,
+  guardian_nickname text
 );
+
+-- MIGRATION: If you already have the table, run these separately:
+-- ALTER TABLE students ADD COLUMN IF NOT EXISTS consecutive_absences integer DEFAULT 0;
+-- ALTER TABLE students ADD COLUMN IF NOT EXISTS student_status text DEFAULT 'active';
+-- ALTER TABLE students ADD COLUMN IF NOT EXISTS last_followup_sent timestamptz;
+-- ALTER TABLE students ADD COLUMN IF NOT EXISTS guardian_nickname text;
 
 -- 2. Face Embeddings Table
 CREATE TABLE IF NOT EXISTS face_embeddings (

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MinistryService, LeaderboardEntry } from '../services/ministry.service';
 import { db, formatError } from '../services/db.service';
-import { AgeGroup, UserSession, Student } from '../types';
+import { AgeGroup, UserSession, Student, PointLedger } from '../types';
 import { DEFAULT_POINT_RULES } from '../constants';
 import { audio } from '../services/audio.service';
 
@@ -16,6 +16,7 @@ const ClassroomPage: React.FC = () => {
   
   // Award Points Modal State
   const [selectedStudent, setSelectedStudent] = useState<LeaderboardEntry | null>(null);
+  const [studentHistory, setStudentHistory] = useState<PointLedger[]>([]);
   const [manualPoints, setManualPoints] = useState(5);
   const [selectedCategory, setSelectedCategory] = useState('Manual Adjustment');
   const [isAwarding, setIsAwarding] = useState(false);
@@ -59,6 +60,15 @@ const ClassroomPage: React.FC = () => {
     loadClassroom();
   }, [group]);
 
+  // Load history when selected student changes
+  useEffect(() => {
+    if (selectedStudent) {
+      db.getStudentLedger(selectedStudent.id)
+        .then(setStudentHistory)
+        .catch(console.error);
+    }
+  }, [selectedStudent]);
+
   // Reset modal state when opening a new student
   const openModal = (student: LeaderboardEntry) => {
     audio.playClick();
@@ -71,9 +81,41 @@ const ClassroomPage: React.FC = () => {
     setRedoStack([]);
   };
 
+  // Switch student from within modal (Next/Prev) - preserve input settings
+  const switchToStudent = (student: LeaderboardEntry) => {
+    audio.playClick();
+    setSelectedStudent(student);
+    setAwardError('');
+    setUndoStack([]);
+    setRedoStack([]);
+  };
+
+  const handlePrevStudent = () => {
+    if (!selectedStudent) return;
+    const currentIndex = roster.findIndex(s => s.id === selectedStudent.id);
+    if (currentIndex > 0) {
+      switchToStudent(roster[currentIndex - 1]);
+    }
+  };
+
+  const handleNextStudent = () => {
+    if (!selectedStudent) return;
+    const currentIndex = roster.findIndex(s => s.id === selectedStudent.id);
+    if (currentIndex < roster.length - 1) {
+      switchToStudent(roster[currentIndex + 1]);
+    }
+  };
+
+  const handleStudentSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const studentId = e.target.value;
+    const student = roster.find(s => s.id === studentId);
+    if (student) switchToStudent(student);
+  };
+
   const closeModal = () => {
     audio.playClick();
     setSelectedStudent(null);
+    setStudentHistory([]);
   };
 
   // Edit Profile Handlers
@@ -158,6 +200,10 @@ const ClassroomPage: React.FC = () => {
           : s
       ));
       
+      // Refresh History
+      const updatedHistory = await db.getStudentLedger(selectedStudent.id);
+      setStudentHistory(updatedHistory);
+
       // Visual feedback
       if (points > 0) audio.playYehey();
       else audio.playClick();
@@ -177,6 +223,11 @@ const ClassroomPage: React.FC = () => {
     } finally {
       setIsAwarding(false);
     }
+  };
+
+  const handleQuickAdd = (category: string, points: number) => {
+    setManualPoints(points);
+    setSelectedCategory(category);
   };
 
   // 1. New Action (Clear redo, add to undo)
@@ -221,7 +272,19 @@ const ClassroomPage: React.FC = () => {
     }
   };
 
+  const scorePresets = [
+    { label: 'Attendance', pts: 5, bg: 'bg-purple-100 text-purple-600 border-purple-200 hover:bg-purple-200' },
+    { label: 'Worksheet', pts: 5, bg: 'bg-indigo-100 text-indigo-600 border-indigo-200 hover:bg-indigo-200' },
+    { label: 'Memory Verse', pts: 10, bg: 'bg-blue-100 text-blue-600 border-blue-200 hover:bg-blue-200' },
+    { label: 'Recitation', pts: 10, bg: 'bg-cyan-100 text-cyan-600 border-cyan-200 hover:bg-cyan-200' },
+    { label: 'Presentation', pts: 20, bg: 'bg-lime-100 text-lime-700 border-lime-200 hover:bg-lime-200' },
+  ];
+
   if (loading) return <div className="p-10 text-center animate-pulse uppercase font-black text-pink-300">Loading Classroom...</div>;
+
+  const currentStudentIndex = selectedStudent ? roster.findIndex(s => s.id === selectedStudent.id) : -1;
+  const hasPrev = currentStudentIndex > 0;
+  const hasNext = currentStudentIndex >= 0 && currentStudentIndex < roster.length - 1;
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 relative">
@@ -313,22 +376,76 @@ const ClassroomPage: React.FC = () => {
       {/* Award Points Modal */}
       {selectedStudent && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] md:rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-            <div className="bg-pink-500 p-6 md:p-10 text-white relative shrink-0">
-              <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter">Adjust Stars</h3>
-              <p className="text-pink-100 text-[10px] font-black uppercase tracking-widest opacity-80">
-                {selectedStudent.fullName}
-              </p>
-              <button 
-                onClick={closeModal} 
-                className="absolute top-6 right-6 md:top-10 md:right-10 text-white/50 hover:text-white transition-colors text-3xl font-black leading-none"
-                disabled={isAwarding}
-              >
-                &times;
-              </button>
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] md:rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col max-h-[95vh]">
+            <div className="bg-pink-500 p-6 md:p-8 text-white relative shrink-0">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter">Adjust Stars</h3>
+                <button 
+                  onClick={closeModal} 
+                  className="text-white/50 hover:text-white transition-colors text-3xl font-black leading-none"
+                  disabled={isAwarding}
+                >
+                  &times;
+                </button>
+              </div>
+
+              {/* Navigation Header */}
+              <div className="flex items-center justify-between gap-4">
+                <button 
+                  onClick={handlePrevStudent}
+                  disabled={!hasPrev || isAwarding}
+                  className="p-3 bg-pink-400/30 hover:bg-pink-400/50 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <span className="text-xl font-black">←</span>
+                </button>
+                
+                <div className="flex-1 min-w-0">
+                  <select 
+                     value={selectedStudent.id}
+                     onChange={handleStudentSelect}
+                     className="w-full bg-pink-600/50 text-white font-black uppercase tracking-tight text-center text-lg md:text-xl rounded-xl px-2 py-2 outline-none border border-pink-400/50 appearance-none cursor-pointer hover:bg-pink-600/70 transition-colors"
+                  >
+                     {roster.map(s => (
+                       <option key={s.id} value={s.id} className="text-gray-800 bg-white">
+                         {s.fullName}
+                       </option>
+                     ))}
+                  </select>
+                  <p className="text-pink-100 text-[10px] font-bold uppercase tracking-widest mt-1 opacity-80 text-center">
+                    Current Balance: {selectedStudent.totalPoints}
+                  </p>
+                </div>
+
+                <button 
+                  onClick={handleNextStudent}
+                  disabled={!hasNext || isAwarding}
+                  className="p-3 bg-pink-400/30 hover:bg-pink-400/50 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <span className="text-xl font-black">→</span>
+                </button>
+              </div>
             </div>
             
-            <div className="p-6 md:p-8 space-y-6 md:space-y-8 overflow-y-auto">
+            <div className="p-6 md:p-8 space-y-6 md:space-y-8 overflow-y-auto custom-scrollbar">
+              
+              {/* Easy Scoring Buttons (I-STAR System) */}
+              <div>
+                <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-3 text-center">Quick Add (I-STAR)</p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {scorePresets.map((preset) => (
+                    <button
+                      key={preset.label}
+                      onClick={() => handleQuickAdd(preset.label, preset.pts)}
+                      className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95 flex items-center gap-1 ${
+                        selectedCategory === preset.label ? 'ring-2 ring-pink-300 ring-offset-1 ' + preset.bg : 'bg-white border-gray-100 text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      {preset.label} <span className="opacity-50">+{preset.pts}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Manual Adjustment Section */}
               <div className="bg-gray-50 p-4 md:p-6 rounded-[2rem] border border-gray-100 text-center space-y-4">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Point Calculator</label>
@@ -357,7 +474,7 @@ const ClassroomPage: React.FC = () => {
                   <select 
                     value={selectedCategory}
                     onChange={(e) => { audio.playClick(); setSelectedCategory(e.target.value); }}
-                    className="w-full bg-white border border-gray-100 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-pink-100"
+                    className="w-full bg-white border border-gray-100 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-pink-100 cursor-pointer"
                   >
                     <option value="Manual Adjustment">Manual Addition</option>
                     {DEFAULT_POINT_RULES.map(r => <option key={r.category} value={r.category}>{r.category}</option>)}
@@ -401,6 +518,38 @@ const ClassroomPage: React.FC = () => {
                 >
                   Redo <span className="text-sm">↪️</span>
                 </button>
+              </div>
+
+              {/* Transaction History Section */}
+              <div className="border-t border-gray-100 pt-6">
+                <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Recent Activity (Last 5)</h5>
+                <div className="space-y-2">
+                  {studentHistory.map((entry) => (
+                    <div key={entry.id} className={`flex justify-between items-center p-4 rounded-2xl border ${entry.voided ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-pink-50 shadow-sm'}`}>
+                      <div className="flex flex-col gap-1">
+                        <span className={`text-[10px] font-black uppercase tracking-tight ${entry.voided ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                           {entry.category}
+                        </span>
+                        <div className="flex gap-2 text-[8px] font-bold text-gray-400 uppercase tracking-widest">
+                           <span>{new Date(entry.entryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                           <span className="text-gray-300">•</span>
+                           <span>{entry.recordedBy}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                         <span className={`text-sm font-black ${entry.voided ? 'text-gray-300' : (entry.points > 0 ? 'text-pink-500' : 'text-gray-400')}`}>
+                           {entry.points > 0 ? '+' : ''}{entry.points}
+                         </span>
+                         {entry.voided && <div className="text-[7px] font-black text-red-400 uppercase tracking-widest mt-0.5">VOIDED</div>}
+                      </div>
+                    </div>
+                  ))}
+                  {studentHistory.length === 0 && (
+                    <p className="text-center text-[9px] text-gray-300 font-bold uppercase py-4 italic border-2 border-dashed border-gray-50 rounded-2xl">
+                      No recent activity for this student.
+                    </p>
+                  )}
+                </div>
               </div>
 
               {awardError && (

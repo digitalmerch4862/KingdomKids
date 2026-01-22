@@ -62,6 +62,9 @@ export class MinistryService {
       checkedInBy: actor,
       status: 'OPEN'
     });
+    
+    // RESET ABSENCES ON CHECK-IN
+    await db.resetStudentAbsences(studentId);
 
     await db.log({
       eventType: 'CHECKIN',
@@ -83,6 +86,48 @@ export class MinistryService {
     }
 
     return session;
+  }
+
+  // --- NEW: Absence Sweep Logic ---
+  static async runAbsenceSweep(actor: string) {
+    const today = new Date().toISOString().split('T')[0];
+    const students = await db.getStudents();
+    const sessions = await db.getAttendance();
+    
+    const presentStudentIds = new Set(
+      sessions
+        .filter(s => s.sessionDate === today)
+        .map(s => s.studentId)
+    );
+
+    let frozenCount = 0;
+    let absentCount = 0;
+
+    for (const student of students) {
+      // Ignore already frozen students or those checked in
+      if (student.studentStatus === 'frozen') continue;
+      if (presentStudentIds.has(student.id)) continue;
+
+      // Student is Active AND Absent
+      absentCount++;
+      const newAbsences = (student.consecutiveAbsences || 0) + 1;
+      const newStatus = newAbsences >= 4 ? 'frozen' : 'active';
+      
+      if (newStatus === 'frozen') frozenCount++;
+
+      await db.updateStudent(student.id, {
+        consecutiveAbsences: newAbsences,
+        studentStatus: newStatus
+      });
+    }
+
+    await db.log({
+      eventType: 'ABSENCE_SWEEP',
+      actor,
+      payload: { today, absentCount, newFrozen: frozenCount }
+    });
+
+    return { absentCount, frozenCount };
   }
 
   static async runAutoCheckout() {

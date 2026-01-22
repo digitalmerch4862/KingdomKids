@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, formatError } from '../services/db.service';
 import { MinistryService } from '../services/ministry.service';
-import { ActivitySchedule, AttendanceSession, Student } from '../types';
+import { ActivitySchedule, AttendanceSession, Student, UserSession } from '../types';
+import { audio } from '../services/audio.service';
 
 const getFirstName = (fullName: string) => {
   if (!fullName) return "Student";
@@ -126,15 +127,18 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
           <p className="text-gray-400 font-medium uppercase tracking-widest text-[10px]">Kingdom Kids Live Monitoring</p>
         </div>
         
-        <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8 bg-white md:bg-transparent p-4 md:p-0 rounded-2xl border border-pink-50 md:border-none shadow-sm md:shadow-none">
-          <div className="flex justify-between md:block items-center text-right">
-            <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest block mb-0.5">Date Today</span>
-            <p className="text-base md:text-lg font-black text-gray-700 uppercase tracking-tighter">{formattedDate}</p>
-          </div>
-          <div className="hidden md:block w-px h-8 bg-pink-50"></div>
-          <div className="flex justify-between md:block items-center text-right">
-            <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest block mb-0.5">Current Time</span>
-            <p className="text-base md:text-lg font-black text-gray-700 uppercase tracking-tighter">{formattedTime}</p>
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+           {/* Date/Time Widget */}
+           <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8 bg-white md:bg-transparent p-4 md:p-0 rounded-2xl border border-pink-50 md:border-none shadow-sm md:shadow-none w-full md:w-auto">
+            <div className="flex justify-between md:block items-center text-right">
+              <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest block mb-0.5">Date Today</span>
+              <p className="text-base md:text-lg font-black text-gray-700 uppercase tracking-tighter">{formattedDate}</p>
+            </div>
+            <div className="hidden md:block w-px h-8 bg-pink-50"></div>
+            <div className="flex justify-between md:block items-center text-right">
+              <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest block mb-0.5">Current Time</span>
+              <p className="text-base md:text-lg font-black text-gray-700 uppercase tracking-tighter">{formattedTime}</p>
+            </div>
           </div>
         </div>
       </div>
