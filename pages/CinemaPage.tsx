@@ -14,13 +14,13 @@ interface VideoData {
 
 // --- Data Configuration (All Playlists have 5 Videos) ---
 
-// "The Biggest Story" Themed Content - Hero Video
+// "The Biggest Story" Themed Content - Hero Video (UPDATED LINK)
 const HERO_VIDEO: VideoData = {
   id: 'hero',
   title: 'The Biggest Story',
   description: 'The Bible is full of exciting stories that fill us with awe and wonder. But this is the biggest story of all—the story of the Snake Crusher.',
-  youtubeId: 'MOXqKj6j9kU',
-  thumbnail: 'https://img.youtube.com/vi/MOXqKj6j9kU/maxresdefault.jpg'
+  youtubeId: 'FAzQIA_rF1s', // Updated to Chapter 1
+  thumbnail: 'https://img.youtube.com/vi/FAzQIA_rF1s/maxresdefault.jpg'
 };
 
 const PENTATEUCH_VIDEOS: VideoData[] = [
@@ -36,7 +36,7 @@ const HISTORY_VIDEOS: VideoData[] = [
   { id: 'ot13', title: 'Chapter 13: The Prince of Egypt', youtubeId: '5BQFsj-xNNQ', duration: '4m' },
   { id: 'ot19', title: 'Chapter 19: The Return Home', youtubeId: 'W0CurZmGujI', duration: '5m' },
   { id: 'ot27', title: 'Chapter 27: David Stands Tall', youtubeId: 'qYz3R6dUTjs', duration: '5m' },
-  { id: 'ot28', title: 'Chapter 28: The King\'s Mistakes', youtubeId: 'MOXqKj6j9kU', duration: '4m' }, // Using Hero as filler to ensure 5
+  { id: 'ot28', title: 'Chapter 28: The King\'s Mistakes', youtubeId: 'MOXqKj6j9kU', duration: '4m' }, // Using previous hero video as filler
 ];
 
 const POETRY_VIDEOS: VideoData[] = [
