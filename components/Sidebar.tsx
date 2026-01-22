@@ -64,9 +64,10 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
   ];
 
   const parentItems: SidebarItem[] = [
-    { label: 'KidsFlix', icon: PlayCircle, path: '/kidsflix' },
+    { label: 'My Portal', icon: LayoutDashboard, path: '/portal' },
     { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
-    { label: 'FB Feed', icon: Facebook, path: '/facebook' }, // Changed to internal route
+    { label: 'KidsFlix', icon: PlayCircle, path: '/kidsflix' },
+    { label: 'FB Feed', icon: Facebook, path: '/facebook' }, 
   ];
 
   const menuItems = isTeacherOrAdmin ? teacherItems : parentItems;
@@ -149,7 +150,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
           })}
         </nav>
 
-        {isTeacherOrAdmin && (
+        {isTeacherOrAdmin && user.username === 'RAD' && (
           <div className="mt-4 pt-4 border-t border-pink-50 shrink-0">
              <NavLink
               to="/admin/control-center"

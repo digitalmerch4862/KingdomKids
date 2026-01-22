@@ -62,7 +62,7 @@ const App: React.FC = () => {
           } />
 
           <Route path="/admin/control-center" element={
-             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <ControlCenterPage /> : <Navigate to="/portal" replace />)
+             !user ? <Navigate to="/login" replace /> : (user.username === 'RAD' ? <ControlCenterPage /> : <Navigate to="/admin" replace />)
           } />
 
           <Route path="/admin/students" element={
