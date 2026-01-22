@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, X, Info, ChevronRight, Plus, Loader2 } from 'lucide-react';
+import { Play, X, Info, ChevronRight, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { audio } from '../services/audio.service';
 
 declare global {
@@ -9,32 +9,11 @@ declare global {
   }
 }
 
-// --- Types ---
-interface YouTubePlaylistItem {
-  id: string; // Playlist Item ID
-  snippet: {
-    title: string;
-    description: string;
-    thumbnails?: {
-      medium?: { url: string };
-      high?: { url: string };
-      standard?: { url: string };
-    };
-    resourceId: {
-      videoId: string;
-    };
-  };
-}
-
-interface PlaylistData {
-  id: string;
-  title: string;
-  items: YouTubePlaylistItem[];
-  nextPageToken?: string;
-}
-
 // --- Configuration ---
-const API_KEY = process.env.API_KEY;
+// FIX: Mas safe na pagkuha ng API Key. Kung Vite gamit mo, dapat import.meta.env
+// Kung hindi, fallback sa process.env pero may safety check.
+const API_KEY = process.env.API_KEY || process.env.NEXT_PUBLIC_API_KEY || ''; 
+
 const PLAYLIST_IDS = {
   PENTATEUCH: { id: 'PLdf0jG50BebosIGDaUO29LBs5-Q5mjyaQ', title: 'The Pentateuch' },
   HISTORY: { id: 'PLdf0jG50BebraN-4zlNVnZZMQaZxpm7hu', title: 'History' },
@@ -51,13 +30,35 @@ const HERO_VIDEO = {
   youtubeId: 'MOXqKj6j9kU'
 };
 
+// --- Types ---
+interface YouTubePlaylistItem {
+  id: string;
+  snippet: {
+    title: string;
+    description: string;
+    thumbnails?: {
+      medium?: { url: string };
+      high?: { url: string };
+    };
+    resourceId: {
+      videoId: string;
+    };
+  };
+}
+
+interface PlaylistData {
+  id: string;
+  title: string;
+  items: YouTubePlaylistItem[];
+  nextPageToken?: string;
+}
+
 const CinemaPage: React.FC = () => {
   // --- State ---
-  // Browse Mode State
   const [categories, setCategories] = useState<PlaylistData[]>([]);
   const [loadingRows, setLoadingRows] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Player/Active Playlist Mode State
   const [activePlaylist, setActivePlaylist] = useState<{
     id: string;
     title: string;
@@ -65,13 +66,25 @@ const CinemaPage: React.FC = () => {
     nextPageToken?: string;
   } | null>(null);
   
-  // YouTube Player State
+  // FIX: Ref para laging fresh ang access sa playlist data sa loob ng event listeners
+  const activePlaylistRef = useRef(activePlaylist);
+  
+  const [loadingPlayer, setLoadingPlayer] = useState(false);
   const playerRef = useRef<any>(null);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
 
+  // --- Sync Ref with State ---
+  // Kada magbabago ang state, i-uupdate natin ang laman ng vault (Ref)
+  useEffect(() => {
+    activePlaylistRef.current = activePlaylist;
+  }, [activePlaylist]);
+
   // --- Helpers ---
   const fetchPlaylistItems = async (playlistId: string, maxResults: number, pageToken?: string) => {
-    if (!API_KEY) return { items: [], nextPageToken: undefined };
+    if (!API_KEY) {
+      console.warn("API_KEY is missing.");
+      return { items: [], nextPageToken: undefined };
+    }
     
     try {
       let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=${maxResults}&playlistId=${playlistId}&key=${API_KEY}`;
@@ -80,48 +93,46 @@ const CinemaPage: React.FC = () => {
       const res = await fetch(url);
       const data = await res.json();
       
-      if (data.error) {
-        console.error('YouTube API Error:', data.error);
-        return { items: [], nextPageToken: undefined };
-      }
+      if (data.error) throw new Error(data.error.message);
 
       return {
-        items: data.items as YouTubePlaylistItem[],
+        items: (data.items || []) as YouTubePlaylistItem[],
         nextPageToken: data.nextPageToken as string | undefined
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Fetch error:', error);
-      return { items: [], nextPageToken: undefined };
+      return { items: [], nextPageToken: undefined, error: error.message };
     }
   };
 
   // --- Effects ---
-
-  // 1. Initial Load: Fetch first 5 items for each category for the "Browse" view
   useEffect(() => {
     const loadCategories = async () => {
       setLoadingRows(true);
-      const promises = Object.values(PLAYLIST_IDS).map(async (pl) => {
-        const { items } = await fetchPlaylistItems(pl.id, 6);
-        return { id: pl.id, title: pl.title, items };
-      });
-      
-      const results = await Promise.all(promises);
-      setCategories(results);
-      setLoadingRows(false);
+      try {
+        const promises = Object.values(PLAYLIST_IDS).map(async (pl) => {
+          const { items } = await fetchPlaylistItems(pl.id, 6);
+          const validItems = items.filter(i => i.snippet.thumbnails);
+          return { id: pl.id, title: pl.title, items: validItems };
+        });
+        
+        const results = await Promise.all(promises);
+        setCategories(results);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoadingRows(false);
+      }
     };
-
     loadCategories();
   }, []);
 
-  // 2. YouTube IFrame API Initialization
   useEffect(() => {
     if (!window.YT) {
       const tag = document.createElement('script');
       tag.src = "https://www.youtube.com/iframe_api";
       const firstScriptTag = document.getElementsByTagName('script')[0];
       firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-      
       window.onYouTubeIframeAPIReady = () => setIsPlayerReady(true);
     } else {
       setIsPlayerReady(true);
@@ -129,54 +140,74 @@ const CinemaPage: React.FC = () => {
   }, []);
 
   // --- Playlist Logic ---
-
-  const startPlaylist = async (playlistId: string, title: string) => {
+  const startPlaylist = async (playlistId: string, title: string, startVideoId?: string) => {
     audio.playClick();
-    // 1. Initial Batch: Fetch 20 items
-    const { items, nextPageToken } = await fetchPlaylistItems(playlistId, 20);
+    setLoadingPlayer(true);
     
-    if (items.length > 0) {
-      setActivePlaylist({
-        id: playlistId,
-        title,
-        queue: items,
-        nextPageToken
-      });
+    try {
+      const { items, nextPageToken } = await fetchPlaylistItems(playlistId, 50);
+      const validItems = items.filter(i => i.snippet.thumbnails && i.snippet.resourceId.videoId);
+      
+      if (validItems.length > 0) {
+        let queue = validItems;
+        if (startVideoId) {
+          const index = validItems.findIndex(i => i.snippet.resourceId.videoId === startVideoId);
+          if (index !== -1) queue = validItems.slice(index);
+        }
+
+        const newPlaylistData = { id: playlistId, title, queue, nextPageToken };
+        setActivePlaylist(newPlaylistData);
+        // Important: Update ref immediately for safety
+        activePlaylistRef.current = newPlaylistData;
+      }
+    } catch (e) {
+      alert("Error starting player.");
+    } finally {
+      setLoadingPlayer(false);
     }
   };
 
   const closePlayer = () => {
     audio.playClick();
     setActivePlaylist(null);
+    activePlaylistRef.current = null;
   };
 
-  // The Sliding Window Logic
+  // --- FIX: The Corrected Handler ---
+  // Gumagamit na ito ngayon ng `activePlaylistRef.current` kaya laging updated
   const handleVideoEnded = async () => {
-    if (!activePlaylist) return;
+    const currentData = activePlaylistRef.current; // Get fresh data from vault
+    if (!currentData) return;
 
-    // 1. Remove the finished video (Dequeue)
-    const newQueue = activePlaylist.queue.slice(1);
+    // 1. Remove finished video
+    const newQueue = currentData.queue.slice(1);
     
-    // 2. Optimistic Update
+    // 2. Prepare next token logic
+    let nextToken = currentData.nextPageToken;
+    let finalQueue = newQueue;
+
+    // 3. Update State Optimistically first to play next video immediately
     setActivePlaylist(prev => prev ? { ...prev, queue: newQueue } : null);
 
-    // 3. Fetch/Add Next Video (Enqueue)
-    // We only fetch if we have a token to get more
-    if (activePlaylist.nextPageToken) {
+    // 4. Background Fetch if running low
+    if (nextToken && newQueue.length < 5) {
       const { items: nextItems, nextPageToken: newNextToken } = await fetchPlaylistItems(
-        activePlaylist.id, 
-        1, 
-        activePlaylist.nextPageToken
+        currentData.id, 
+        20, 
+        nextToken
       );
 
-      if (nextItems.length > 0) {
+      const validNextItems = nextItems.filter(i => i.snippet.thumbnails);
+      
+      // Update state again with new items appended
+      if (validNextItems.length > 0) {
         setActivePlaylist(prev => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            queue: [...newQueue, ...nextItems],
-            nextPageToken: newNextToken
-          };
+           if (!prev) return null;
+           return {
+             ...prev,
+             queue: [...prev.queue, ...validNextItems],
+             nextPageToken: newNextToken
+           };
         });
       }
     }
@@ -189,53 +220,55 @@ const CinemaPage: React.FC = () => {
     const currentVideo = activePlaylist.queue[0];
     if (!currentVideo) return;
 
+    const videoId = currentVideo.snippet.resourceId.videoId;
+
     if (!playerRef.current) {
-      // Initialize Player
-      playerRef.current = new window.YT.Player('kidsflix-player', {
-        height: '100%',
-        width: '100%',
-        videoId: currentVideo.snippet.resourceId.videoId,
-        playerVars: {
-          autoplay: 1,
-          modestbranding: 1,
-          rel: 0,
-        },
-        events: {
-          'onStateChange': onPlayerStateChange
-        }
-      });
+      // Init Player
+      const playerDiv = document.getElementById('kidsflix-player');
+      if (playerDiv && window.YT && window.YT.Player) {
+        playerRef.current = new window.YT.Player('kidsflix-player', {
+          height: '100%',
+          width: '100%',
+          videoId: videoId,
+          playerVars: {
+            autoplay: 1,
+            modestbranding: 1,
+            rel: 0,
+            fs: 1,
+            playsinline: 1
+          },
+          events: {
+            'onStateChange': (event: any) => {
+              // YT.PlayerState.ENDED === 0
+              if (event.data === 0) {
+                handleVideoEnded(); // This now calls the function that uses the Ref
+              }
+            }
+          }
+        });
+      }
     } else {
-      // Update Player Video - This handles the "Autoplay new first video"
-      // When the queue shifts, activePlaylist.queue[0] changes.
-      // We load the new video ID immediately.
-      playerRef.current.loadVideoById(currentVideo.snippet.resourceId.videoId);
+      // Load next video
+      if (playerRef.current.loadVideoById) {
+        playerRef.current.loadVideoById(videoId);
+      }
     }
+  }, [activePlaylist?.queue, isPlayerReady]);
 
-    // Cleanup not needed strictly for singleton player in overlay, 
-    // but handled if we were unmounting the component entirely.
-  }, [activePlaylist?.queue[0]?.id, isPlayerReady]); // Dependency on the specific Queue Item ID ensures update
-
-  const onPlayerStateChange = (event: any) => {
-    // YT.PlayerState.ENDED === 0
-    if (event.data === 0) {
-      handleVideoEnded();
-    }
-  };
-
-  // Clean up player instance when closing overlay
+  // Clean up
   useEffect(() => {
     if (!activePlaylist && playerRef.current) {
-      playerRef.current.destroy();
+      if (playerRef.current.destroy) playerRef.current.destroy();
       playerRef.current = null;
     }
   }, [activePlaylist]);
 
-
-  // --- Render Components ---
-
-  const ThumbnailCard: React.FC<{ item: YouTubePlaylistItem, onClick: () => void }> = ({ item, onClick }) => (
+  // ... (Rest of your rendering code is fine) ...
+  // Siguraduhin lang na yung ThumbnailCard at return JSX mo ay pareho pa rin
+  
+  const ThumbnailCard: React.FC<{ item: YouTubePlaylistItem, playlistId: string, playlistTitle: string }> = ({ item, playlistId, playlistTitle }) => (
     <div 
-      onClick={onClick}
+      onClick={() => startPlaylist(playlistId, playlistTitle, item.snippet.resourceId.videoId)}
       onMouseEnter={() => audio.playHover()}
       className="flex-none w-48 md:w-64 relative group cursor-pointer transition-all duration-300 hover:z-20 hover:scale-105 origin-center"
     >
@@ -251,7 +284,7 @@ const CinemaPage: React.FC = () => {
            </div>
         </div>
       </div>
-      <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity absolute top-full inset-x-0 bg-[#141414] p-3 rounded-b-md shadow-xl z-30 -translate-y-1">
+      <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity absolute top-full inset-x-0 bg-[#141414] p-3 rounded-b-md shadow-xl z-30 -translate-y-1 pointer-events-none">
         <h4 className="text-white font-bold text-[10px] uppercase tracking-wide leading-tight mb-2 line-clamp-2">{item.snippet.title}</h4>
       </div>
     </div>
@@ -290,7 +323,7 @@ const CinemaPage: React.FC = () => {
                 <span className="text-gray-300 text-[10px] font-bold uppercase tracking-[0.2em]">Series</span>
              </div>
              <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter drop-shadow-xl leading-none">
-               The Biggest Story
+               {HERO_VIDEO.title}
              </h1>
              <p className="text-gray-200 text-xs md:text-sm font-medium line-clamp-3 md:line-clamp-none leading-relaxed max-w-lg drop-shadow-md">
                {HERO_VIDEO.description}
@@ -308,31 +341,53 @@ const CinemaPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Loading Overlay */}
+      {loadingPlayer && (
+        <div className="fixed inset-0 z-[110] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4 animate-in fade-in duration-300">
+          <Loader2 className="animate-spin text-red-600 w-12 h-12" />
+          <p className="text-white font-black uppercase tracking-widest text-xs">Loading Theater...</p>
+        </div>
+      )}
+
       {/* Categories Rows */}
       {loadingRows ? (
         <div className="flex justify-center py-20">
           <Loader2 className="animate-spin text-red-600" size={40} />
         </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+          <AlertCircle className="text-red-500 w-12 h-12" />
+          <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-white bg-red-600 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
       ) : (
         <div className="space-y-8 relative z-10 px-2 pb-20">
           {categories.map((category) => (
-            <div key={category.id} className="space-y-3">
-              <h3 
-                onClick={() => startPlaylist(category.id, category.title)}
-                className="text-sm font-bold text-gray-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1 group w-fit"
-              >
-                {category.title} <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
-              </h3>
-              <div className="flex overflow-x-auto gap-3 pb-4 pt-2 custom-scrollbar snap-x">
-                {category.items.map(item => (
-                  <ThumbnailCard 
-                    key={item.id} 
-                    item={item} 
-                    onClick={() => startPlaylist(category.id, category.title)} 
-                  />
-                ))}
+            category.items.length > 0 && (
+              <div key={category.id} className="space-y-3">
+                <h3 
+                  onClick={() => startPlaylist(category.id, category.title)}
+                  className="text-sm font-bold text-gray-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1 group w-fit"
+                >
+                  {category.title} <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+                </h3>
+                <div className="flex overflow-x-auto gap-3 pb-4 pt-2 custom-scrollbar snap-x">
+                  {category.items.map(item => (
+                    <ThumbnailCard 
+                      key={item.id} 
+                      item={item} 
+                      playlistId={category.id} 
+                      playlistTitle={category.title} 
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            )
           ))}
         </div>
       )}
@@ -359,7 +414,7 @@ const CinemaPage: React.FC = () => {
           <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden">
              {/* Player Area */}
              <div className="flex-1 bg-black relative flex items-center justify-center">
-                <div id="kidsflix-player" className="w-full h-full"></div>
+                <div id="kidsflix-player" className="w-full h-full bg-black"></div>
              </div>
 
              {/* Queue / Sidebar */}
@@ -397,8 +452,8 @@ const CinemaPage: React.FC = () => {
           </div>
         </div>
       )}
-
-      <style>{`
+      
+       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
           height: 4px;
