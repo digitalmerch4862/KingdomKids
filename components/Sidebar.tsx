@@ -64,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
   ];
 
   const parentItems: SidebarItem[] = [
-    { label: 'The Biggest Story', icon: PlayCircle, path: '/biggest-story' },
+    { label: 'KidsFlix', icon: PlayCircle, path: '/kidsflix' },
     { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
     { label: 'FB Page', icon: Facebook, path: 'https://www.facebook.com', isExternal: true },
   ];

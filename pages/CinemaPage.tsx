@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Play, X, Info, ChevronRight, Plus } from 'lucide-react';
 import { audio } from '../services/audio.service';
@@ -11,7 +12,7 @@ interface VideoData {
   thumbnail?: string;
 }
 
-// "The Biggest Story" Themed Content - Hero Video (The full animated short film)
+// "The Biggest Story" Themed Content - Hero Video
 const HERO_VIDEO: VideoData = {
   id: 'hero',
   title: 'The Biggest Story',
@@ -20,21 +21,33 @@ const HERO_VIDEO: VideoData = {
   thumbnail: 'https://img.youtube.com/vi/MOXqKj6j9kU/maxresdefault.jpg'
 };
 
-// Official videos from "The Biggest Story" Old Testament Playlist
-const OT_VIDEOS: VideoData[] = [
+const PENTATEUCH_VIDEOS: VideoData[] = [
   { id: 'ot1', title: 'Chapter 1: And So It Begins', youtubeId: 'FAzQIA_rF1s', duration: '4m' },
   { id: 'ot2', title: 'Chapter 2: A Very Bad Day', youtubeId: 'OTRfS7N9NIY', duration: '4m' },
   { id: 'ot3', title: 'Chapter 3: From Bad to Worse', youtubeId: 'jjcut2pkV5I', duration: '4m' },
   { id: 'ot4', title: 'Chapter 4: Rain, Rain, Go Away', youtubeId: '-0nQgt1bwEU', duration: '4m' },
-  { id: 'ot12', title: 'Chapter 12: Joseph\'s Mean Brothers', youtubeId: '5BQFsj-xNNQ', duration: '4m' },
 ];
 
-// Official videos from "The Biggest Story" New Testament Playlist
-const NT_VIDEOS: VideoData[] = [
+const HISTORY_VIDEOS: VideoData[] = [
+  { id: 'ot12', title: 'Chapter 12: Joseph\'s Mean Brothers', youtubeId: 'EyQ539YWQhY', duration: '4m' },
+  { id: 'ot13', title: 'Chapter 13: The Prince of Egypt', youtubeId: '5BQFsj-xNNQ', duration: '4m' },
+];
+
+const POETRY_VIDEOS: VideoData[] = [
+  { id: 'ot18', title: 'Chapter 18: The King Who Sang', youtubeId: 'WouAIGfl8zA', duration: '5m' },
+];
+
+const PROPHETS_VIDEOS: VideoData[] = [
+  { id: 'ot26', title: 'Chapter 26: Daniel and the Lions', youtubeId: 'Y9vm0JPU5_Q', duration: '5m' },
+];
+
+const GOSPELS_VIDEOS: VideoData[] = [
+  { id: 'nt54', title: 'Chapter 54: The Rescuer Is Born', youtubeId: 'WBaWapszWkE', duration: '5m' },
   { id: 'nt60', title: 'Chapter 60: Follow the Leader', youtubeId: '5-VO3vS7bnM', duration: '4m' },
   { id: 'nt78', title: 'Chapter 78: Jesus Cleans House', youtubeId: 'DJ29DfRKNHQ', duration: '4m' },
-  { id: 'nt80', title: 'Chapter 80: A Meal for the Ages', youtubeId: 'SdGoaqOafnk', duration: '4m' },
-  { id: 'nt82', title: 'Chapter 82: The Snake Crusher Is Crushed', youtubeId: 'gUGwzomWe28', duration: '5m' },
+];
+
+const REVELATION_VIDEOS: VideoData[] = [
   { id: 'nt104', title: 'Chapter 104: All Things New', youtubeId: 'N31dtIRIVOo', duration: '4m' },
 ];
 
@@ -42,24 +55,19 @@ const CinemaPage: React.FC = () => {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
   const openVideo = (youtubeId: string) => {
-    // audio.playClick(); // Uncomment if audio service is available
+    audio.playClick();
     setSelectedVideo(youtubeId);
   };
 
   const closeVideo = () => {
-    // audio.playClick(); // Uncomment if audio service is available
+    audio.playClick();
     setSelectedVideo(null);
-  };
-
-  // Mock audio calls for the template if service isn't present
-  const playHover = () => {
-    // audio.playHover(); 
   };
 
   const ThumbnailCard: React.FC<{ video: VideoData }> = ({ video }) => (
     <div 
       onClick={() => openVideo(video.youtubeId)}
-      onMouseEnter={playHover}
+      onMouseEnter={() => audio.playHover()}
       className="flex-none w-48 md:w-64 relative group cursor-pointer transition-all duration-300 hover:z-20 hover:scale-105 origin-center"
     >
       <div className="aspect-video rounded-md overflow-hidden shadow-lg bg-[#202020] border border-transparent group-hover:border-white/20 relative">
@@ -69,7 +77,7 @@ const CinemaPage: React.FC = () => {
           className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
           onError={(e) => {
              const target = e.target as HTMLImageElement;
-             target.src = 'https://placehold.co/640x360/1f2937/white?text=Biggest+Story';
+             target.src = 'https://placehold.co/640x360/1f2937/white?text=KidsFlix';
           }}
         />
         {/* Play Icon Overlay */}
@@ -156,25 +164,73 @@ const CinemaPage: React.FC = () => {
       {/* Content Rows */}
       <div className="space-y-8 relative z-10 px-2 pb-20">
         
-        {/* Row 1: Old Testament */}
+        {/* Row 1: Pentateuch */}
         <div className="space-y-3">
           <h3 className="text-sm font-bold text-gray-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1 group">
-            Old Testament Stories <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+            The Pentateuch <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
           </h3>
           <div className="flex overflow-x-auto gap-3 pb-4 pt-2 custom-scrollbar snap-x">
-            {OT_VIDEOS.map(video => (
+            {PENTATEUCH_VIDEOS.map(video => (
               <ThumbnailCard key={video.id} video={video} />
             ))}
           </div>
         </div>
 
-        {/* Row 2: New Testament */}
+        {/* Row 2: History */}
         <div className="space-y-3">
-           <h3 className="text-sm font-bold text-gray-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1 group">
-            New Testament Stories <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+          <h3 className="text-sm font-bold text-gray-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1 group">
+            History <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
           </h3>
           <div className="flex overflow-x-auto gap-3 pb-4 pt-2 custom-scrollbar snap-x">
-            {NT_VIDEOS.map(video => (
+            {HISTORY_VIDEOS.map(video => (
+              <ThumbnailCard key={video.id} video={video} />
+            ))}
+          </div>
+        </div>
+
+        {/* Row 3: Poetry */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold text-gray-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1 group">
+            Poetry <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+          </h3>
+          <div className="flex overflow-x-auto gap-3 pb-4 pt-2 custom-scrollbar snap-x">
+            {POETRY_VIDEOS.map(video => (
+              <ThumbnailCard key={video.id} video={video} />
+            ))}
+          </div>
+        </div>
+
+        {/* Row 4: The Prophets */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold text-gray-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1 group">
+            The Prophets <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+          </h3>
+          <div className="flex overflow-x-auto gap-3 pb-4 pt-2 custom-scrollbar snap-x">
+            {PROPHETS_VIDEOS.map(video => (
+              <ThumbnailCard key={video.id} video={video} />
+            ))}
+          </div>
+        </div>
+
+        {/* Row 5: Gospels */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold text-gray-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1 group">
+            Gospels <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+          </h3>
+          <div className="flex overflow-x-auto gap-3 pb-4 pt-2 custom-scrollbar snap-x">
+            {GOSPELS_VIDEOS.map(video => (
+              <ThumbnailCard key={video.id} video={video} />
+            ))}
+          </div>
+        </div>
+
+        {/* Row 6: Revelation */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold text-gray-200 hover:text-white transition-colors cursor-pointer flex items-center gap-1 group">
+            Revelation <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+          </h3>
+          <div className="flex overflow-x-auto gap-3 pb-4 pt-2 custom-scrollbar snap-x">
+            {REVELATION_VIDEOS.map(video => (
               <ThumbnailCard key={video.id} video={video} />
             ))}
           </div>
@@ -196,7 +252,7 @@ const CinemaPage: React.FC = () => {
               width="100%"
               height="100%"
               src={`https://www.youtube.com/embed/${selectedVideo}?autoplay=1&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&fs=1`}
-              title="The Biggest Story Player"
+              title="KidsFlix Player"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

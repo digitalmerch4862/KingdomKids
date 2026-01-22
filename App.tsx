@@ -108,7 +108,7 @@ const App: React.FC = () => {
             !user ? <Navigate to="/login" replace /> : <LeaderboardPage />
           } />
 
-          <Route path="/biggest-story" element={
+          <Route path="/kidsflix" element={
             !user ? <Navigate to="/login" replace /> : <CinemaPage />
           } />
 
