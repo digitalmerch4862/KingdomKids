@@ -6,6 +6,7 @@ import { audio } from '../services/audio.service';
 import { db } from '../services/db.service';
 import { 
   LayoutDashboard, 
+  BookOpen,
   Camera, 
   Users, 
   Star, 
@@ -61,6 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
     { label: 'Points Ledger', icon: Star, path: '/admin/points' },
     { label: 'Fairness Monitor', icon: Scale, path: '/admin/fairness' },
     { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
+    { label: 'Faith Pathway', icon: BookOpen, path: '/admin/faith-pathway' },
   ];
 
   const parentItems: SidebarItem[] = [

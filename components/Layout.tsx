@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { UserSession } from '../types';
 import Sidebar from './Sidebar';
 import { PanelLeft } from 'lucide-react';
@@ -14,11 +14,14 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
+  const location = useLocation();
 
   const toggleDesktopSidebar = () => {
     audio.playClick();
     setIsDesktopSidebarOpen(!isDesktopSidebarOpen);
   };
+
+  const isFullscreenPage = location.pathname === '/admin/faith-pathway';
 
   return (
     <div className="min-h-screen bg-[#FDF8FA] flex flex-col md:flex-row">
@@ -55,12 +58,16 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       
       <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${user && isDesktopSidebarOpen ? 'md:pl-64' : 'md:pl-0'}`}>
         
-        {/* Desktop Sidebar Toggle */}
+        {/* Desktop Sidebar Toggle - Overlay if fullscreen */}
         {user && (
-          <div className="hidden md:flex p-4 pb-0 items-center">
+          <div className={`${isFullscreenPage ? 'absolute z-[70] top-4 left-4' : 'hidden md:flex p-4 pb-0 items-center'}`}>
             <button 
               onClick={toggleDesktopSidebar}
-              className="p-2 text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-xl transition-all"
+              className={`p-2 rounded-xl transition-all shadow-sm ${
+                isFullscreenPage 
+                ? 'bg-white/80 backdrop-blur-md text-pink-500 hover:bg-white' 
+                : 'text-gray-400 hover:text-pink-500 hover:bg-pink-50'
+              }`}
               title={isDesktopSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
             >
               <PanelLeft size={20} />
@@ -68,14 +75,16 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
           </div>
         )}
 
-        {/* Adjusted padding for mobile vs desktop */}
-        <main className="flex-1 p-4 md:p-10 w-full max-w-7xl mx-auto">
+        {/* Main Content Area */}
+        <main className={`flex-1 flex flex-col ${isFullscreenPage ? 'w-full h-screen' : 'p-4 md:p-10 w-full max-w-7xl mx-auto'}`}>
           <Outlet />
         </main>
         
-        <footer className="p-6 text-center text-[10px] text-gray-300 uppercase tracking-widest pb-24 md:pb-6">
-          &copy; {new Date().getFullYear()} KINGDOM KIDS Attendance System
-        </footer>
+        {!isFullscreenPage && (
+          <footer className="p-6 text-center text-[10px] text-gray-300 uppercase tracking-widest pb-24 md:pb-6">
+            &copy; {new Date().getFullYear()} KINGDOM KIDS Attendance System
+          </footer>
+        )}
       </div>
     </div>
   );

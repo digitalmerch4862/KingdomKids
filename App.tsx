@@ -24,6 +24,7 @@ import FollowUpPage from './pages/FollowUpPage';
 import CinemaPage from './pages/CinemaPage';
 import ControlCenterPage from './pages/ControlCenterPage';
 import FacebookPage from './pages/FacebookPage';
+import FaithPathwayPage from './pages/FaithPathwayPage';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserSession | null>(null);
@@ -59,6 +60,10 @@ const App: React.FC = () => {
         <Route element={<Layout user={user} onLogout={handleLogout} />}>
           <Route path="/admin" element={
             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <AdminDashboard activity={activity} /> : <Navigate to="/portal" replace />)
+          } />
+
+          <Route path="/admin/faith-pathway" element={
+             !user ? <Navigate to="/login" replace /> : (isTeacherOrAdmin ? <FaithPathwayPage /> : <Navigate to="/portal" replace />)
           } />
 
           <Route path="/admin/control-center" element={
