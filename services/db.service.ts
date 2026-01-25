@@ -90,6 +90,7 @@ class DatabaseService {
       createdAt: data.created_at,
       updatedAt: data.updated_at,
       consecutiveAbsences: data.consecutive_absences || 0,
+      // Fix: Use studentStatus instead of student_status as per type definition
       studentStatus: data.student_status || 'active',
       lastFollowupSent: data.last_followup_sent,
       guardianNickname: data.guardian_nickname
@@ -233,6 +234,7 @@ class DatabaseService {
         full_name: data.fullName,
         birthday: data.birthday || null,
         age_group: data.ageGroup,
+        // Fix: Use correct camelCase property names from the input data object
         guardian_name: data.guardianName || null,
         guardian_phone: data.guardianPhone || null,
         photo_url: data.photoUrl,
@@ -262,6 +264,7 @@ class DatabaseService {
     if (updates.studentStatus !== undefined) payload.student_status = updates.studentStatus;
     if (updates.lastFollowupSent !== undefined) payload.last_followup_sent = updates.lastFollowupSent;
     if (updates.guardianNickname !== undefined) payload.guardian_nickname = updates.guardianNickname;
+    if (updates.accessKey !== undefined) payload.access_key = updates.accessKey;
     
     payload.updated_at = new Date().toISOString();
 
@@ -314,7 +317,7 @@ class DatabaseService {
       sessionDate: s.session_date,
       checkInTime: s.check_in_time,
       checkOutTime: s.check_out_time,
-      checkoutMode: s.checkout_mode,
+      checkout_mode: s.checkout_mode,
       checkedInBy: s.checked_in_by,
       checkedOutBy: s.checked_out_by,
       status: s.status,
@@ -437,6 +440,7 @@ class DatabaseService {
         category: data.category,
         points: data.points,
         notes: data.notes,
+        // Fix: Use recordedBy property from input data object
         recorded_by: data.recordedBy,
         voided: false
       }])

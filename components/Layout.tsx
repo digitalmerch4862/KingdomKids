@@ -54,12 +54,6 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
         <main className={`flex-1 flex flex-col min-h-0 ${isFullscreenPage ? 'w-full h-full' : 'p-4 md:p-10 w-full max-w-7xl mx-auto'}`}>
           <Outlet />
         </main>
-        
-        {!isFullscreenPage && (
-          <footer className="p-6 text-center text-[10px] text-gray-300 uppercase tracking-widest pb-24 md:pb-6 shrink-0">
-            &copy; {new Date().getFullYear()} KINGDOM KIDS Attendance System
-          </footer>
-        )}
       </div>
     </div>
   );

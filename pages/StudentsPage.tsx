@@ -18,11 +18,13 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
     guardianName: '',
     guardianPhone: '09',
     notes: '',
-    photoUrl: ''
+    photoUrl: '',
+    accessKey: ''
   });
 
   const isTeacherOrAdmin = user.role === 'TEACHER' || user.role === 'ADMIN';
   const isAdmin = user.role === 'ADMIN';
+  const isRad = user.username.toUpperCase() === 'RAD';
 
   useEffect(() => {
     loadStudents();
@@ -90,7 +92,7 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
   };
 
   const resetForm = () => {
-    setFormData({ fullName: '', birthday: '', guardianName: '', guardianPhone: '09', notes: '', photoUrl: '' });
+    setFormData({ fullName: '', birthday: '', guardianName: '', guardianPhone: '09', notes: '', photoUrl: '', accessKey: '' });
     setEditingStudent(null);
     setIsSaving(false);
     isSavingRef.current = false;
@@ -129,7 +131,8 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
           guardianPhone: formData.guardianPhone,
           notes: formData.notes,
           photoUrl: formData.photoUrl,
-          ageGroup: ageData.group!
+          ageGroup: ageData.group!,
+          accessKey: isRad ? formData.accessKey.toUpperCase() : undefined
         });
       } else {
         await db.addStudent({
@@ -160,11 +163,28 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
       guardianName: student.guardianName,
       guardianPhone: student.guardianPhone,
       notes: student.notes || '',
-      photoUrl: student.photoUrl || ''
+      photoUrl: student.photoUrl || '',
+      accessKey: student.accessKey
     });
     setErrorMsg('');
     setShowAddModal(true);
     audio.playClick();
+  };
+
+  const handleFastEditAccessKey = async (student: Student) => {
+    audio.playClick();
+    const newKey = window.prompt(`Edit Access Key for ${student.fullName}:`, student.accessKey);
+    if (newKey === null || newKey.trim() === '' || newKey.trim().toUpperCase() === student.accessKey) return;
+
+    try {
+      setErrorMsg(`UPDATING ACCESS KEY...`);
+      await db.updateStudent(student.id, { accessKey: newKey.trim().toUpperCase() });
+      audio.playYehey();
+      loadStudents();
+      setErrorMsg('');
+    } catch (err: any) {
+      setErrorMsg(`UPDATE FAILED: ${formatError(err)}`);
+    }
   };
 
   // --- DELETE FUNCTIONALITY ---
@@ -349,7 +369,7 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
       </div>
 
       {errorMsg && (
-        <div className={`p-4 rounded-xl text-[11px] font-black uppercase tracking-widest text-center animate-in shake ${errorMsg.includes('DELETING') ? 'bg-pink-50 text-pink-500 animate-pulse' : 'bg-red-50 border border-red-100 text-red-600'}`}>
+        <div className={`p-4 rounded-xl text-[11px] font-black uppercase tracking-widest text-center animate-in shake ${errorMsg.includes('DELETING') || errorMsg.includes('UPDATING') ? 'bg-pink-50 text-pink-500 animate-pulse' : 'bg-red-50 border border-red-100 text-red-600'}`}>
           {errorMsg}
         </div>
       )}
@@ -389,7 +409,18 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
             <div className="flex justify-between items-start mb-6">
               <div className="text-left">
                 <p className="text-[10px] font-black text-pink-500 uppercase tracking-widest leading-none mb-1">Access Key</p>
-                <p className="text-xs font-black text-gray-800 uppercase tracking-tight">{s.accessKey}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-black text-gray-800 uppercase tracking-tight">{s.accessKey}</p>
+                  {isRad && (
+                    <button 
+                      onClick={() => handleFastEditAccessKey(s)}
+                      className="text-pink-400 hover:text-pink-600 transition-colors"
+                      title="Fast Edit Key"
+                    >
+                      ✏️
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -409,6 +440,10 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
               <div className="flex justify-between items-center text-[12px] font-black text-gray-400 uppercase tracking-widest">
                 <span className="opacity-50">Contact</span>
                 <span className="text-gray-700 tracking-tighter">{maskPhone(s.guardianPhone)}</span>
+              </div>
+              <div className="flex justify-between items-center text-[12px] font-black text-gray-400 uppercase tracking-widest">
+                <span className="opacity-50">Birthday</span>
+                <span className="text-gray-700 tracking-tighter">{s.birthday || 'N/A'}</span>
               </div>
             </div>
 
@@ -469,6 +504,19 @@ const StudentsPage: React.FC<{ user: UserSession }> = ({ user }) => {
                   onChange={e => setFormData({ ...formData, fullName: e.target.value.toUpperCase() })}
                 />
               </div>
+
+              {isRad && editingStudent && (
+                <div className="space-y-1">
+                  <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1">Access Key (Override)</label>
+                  <input 
+                    type="text" 
+                    placeholder="KK-########-##"
+                    className="w-full px-6 py-4 bg-pink-50 border border-pink-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all uppercase font-black text-pink-600 text-[12px] tracking-widest"
+                    value={formData.accessKey}
+                    onChange={e => setFormData({ ...formData, accessKey: e.target.value.toUpperCase() })}
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">

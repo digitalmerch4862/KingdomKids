@@ -175,6 +175,12 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
           <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
           <span>Sign Out</span>
         </button>
+
+        <div className="pt-4 border-t border-pink-100/50 text-center">
+          <p className="text-[8px] font-black text-gray-300 uppercase tracking-[0.2em] leading-relaxed">
+            &copy; {new Date().getFullYear()} KINGDOM KIDS<br/>Attendance System
+          </p>
+        </div>
       </div>
     </aside>
   );
