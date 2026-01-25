@@ -67,7 +67,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         onLogin('PARENTS', getFirstName(student.fullName).toUpperCase(), student.id);
       } else {
         audio.playClick();
-        setError('INVALID ACCESS KEY. PLEASE CHECK REGISTRY OR SIGN UP.');
+        setError(`INVALID KEY: "${cleanKey}". PLEASE CHECK YOUR RECORD OR SIGN UP.`);
       }
     } catch (err) {
       setError('Connection failed. Please try again.');
@@ -109,25 +109,35 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
   };
 
+  /**
+   * Smarter formatting that allows non-numeric keys but still
+   * assists with the standard KK-YYYYMMDD-SS pattern.
+   */
   const handleAccessKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (error) setError('');
-    const val = e.target.value.toUpperCase();
+    let val = e.target.value.toUpperCase();
     
-    // Formatting logic: KK-YYYYMMDD-SS
+    // Auto-masking: only apply if the input looks like a date pattern
     const digitsOnly = val.replace(/[^0-9]/g, '');
     
-    if (digitsOnly.length > 0 && val.startsWith('KK-')) {
+    if (val.startsWith('KK-') && digitsOnly.length > 0) {
+      // It's likely a standard key, format it nicely
       const raw = digitsOnly.substring(0, 10);
       let formatted = 'KK-';
       if (raw.length > 0) formatted += raw.substring(0, 8);
       if (raw.length > 8) formatted += '-' + raw.substring(8);
+      
+      // Update state
       setAccessKey(formatted);
       
-      // Removed auto-trigger at 14 to avoid premature "Invalid" errors while typing
-      // User must now click the login button or finish the key
+      // Auto-trigger only on exactly 14 characters (the standard length)
+      if (formatted.length === 14) {
+        performAccessKeyLogin(formatted);
+      }
     } else if (val === '' || val === 'K' || val === 'KK') {
       setAccessKey('KK-');
     } else {
+      // Allow free typing for non-standard or custom keys (e.g., KK-DEMO-01)
       setAccessKey(val);
     }
   };
@@ -135,8 +145,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const handleParentLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     audio.playClick();
-    if (!accessKey || accessKey.length < 5) return setError('Please enter a full access key');
-    performAccessKeyLogin(accessKey);
+    
+    const cleanInput = accessKey.trim();
+    if (!cleanInput || cleanInput === 'KK-') {
+      setError('PLEASE ENTER YOUR ACCESS KEY');
+      return;
+    }
+    
+    performAccessKeyLogin(cleanInput);
   };
 
   const ageData = useMemo(() => {
@@ -248,7 +264,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     onChange={handleAccessKeyChange} 
                     placeholder="KK-########-##" 
                   />
-                  <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest text-center">{isVerifying ? 'VERIFYING KEY...' : 'PLEASE ENTER THE FULL ACCESS KEY'}</p>
+                  <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest text-center">{isVerifying ? 'VERIFYING KEY...' : 'ENTER YOUR UNIQUE ACCESS KEY'}</p>
                 </div>
                 {error && (
                   <div className="p-3 bg-red-50 rounded-xl animate-in shake">

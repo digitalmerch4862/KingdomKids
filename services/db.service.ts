@@ -90,21 +90,47 @@ class DatabaseService {
       createdAt: data.created_at,
       updatedAt: data.updated_at,
       consecutiveAbsences: data.consecutive_absences || 0,
-      // Fix: Use studentStatus instead of student_status as per type definition
       studentStatus: data.student_status || 'active',
       lastFollowupSent: data.last_followup_sent,
       guardianNickname: data.guardian_nickname
     };
   }
 
+  /**
+   * Resilient student lookup by Access Key.
+   * Handles format variations (dashes, casing, spaces).
+   */
   async getStudentByNo(accessKey: string): Promise<Student | null> {
-    const { data, error } = await supabase
+    const cleanKey = accessKey.trim().toUpperCase();
+    if (!cleanKey) return null;
+
+    // Strategy 1: Case-insensitive direct match (Handles KK-YYYYMMDD-SS)
+    let { data, error } = await supabase
       .from('students')
       .select('*')
-      .eq('access_key', accessKey.toUpperCase())
-      .single();
+      .ilike('access_key', cleanKey)
+      .limit(1)
+      .maybeSingle();
     
-    if (error) return null;
+    // Strategy 2: Fallback to dash-less comparison if Strategy 1 fails
+    if (!data && !error) {
+      const normalizedKey = cleanKey.replace(/[^A-Z0-9]/g, ''); // Keep only letters and numbers
+      
+      // We use raw SQL to compare stripped versions of the keys
+      try {
+        const rawResults = await this.runRawSql(
+          `SELECT * FROM students WHERE UPPER(REPLACE(REPLACE(access_key, '-', ''), ' ', '')) = '${normalizedKey}' LIMIT 1`
+        );
+        if (rawResults && rawResults.length > 0) {
+          data = rawResults[0];
+        }
+      } catch (e) {
+        console.warn("Normalized fallback search failed:", e);
+      }
+    }
+
+    if (!data) return null;
+
     return {
       id: data.id,
       accessKey: data.access_key,
@@ -234,7 +260,7 @@ class DatabaseService {
         full_name: data.fullName,
         birthday: data.birthday || null,
         age_group: data.ageGroup,
-        // Fix: Use correct camelCase property names from the input data object
+        // Fix: Use correct camelCase property names from the Student data object
         guardian_name: data.guardianName || null,
         guardian_phone: data.guardianPhone || null,
         photo_url: data.photoUrl,
@@ -277,10 +303,7 @@ class DatabaseService {
     if (error) throw new Error(formatError(error));
   }
 
-  // --- Follow-Up System Methods ---
-
   async resetStudentAbsences(studentId: string) {
-    // Reset absences and ensure active status upon check-in
     const { error } = await supabase
       .from('students')
       .update({ 
@@ -317,7 +340,8 @@ class DatabaseService {
       sessionDate: s.session_date,
       checkInTime: s.check_in_time,
       checkOutTime: s.check_out_time,
-      checkout_mode: s.checkout_mode,
+      // Fix: map checkout_mode database column to checkoutMode property
+      checkoutMode: s.checkout_mode,
       checkedInBy: s.checked_in_by,
       checkedOutBy: s.checked_out_by,
       status: s.status,
@@ -336,6 +360,7 @@ class DatabaseService {
         student_id: data.studentId,
         session_date: data.sessionDate,
         check_in_time: data.checkInTime,
+        // Fix: Use checkedInBy property name from data object instead of checked_in_by
         checked_in_by: data.checkedInBy,
         status: data.status
       }])
@@ -440,7 +465,7 @@ class DatabaseService {
         category: data.category,
         points: data.points,
         notes: data.notes,
-        // Fix: Use recordedBy property from input data object
+        // Fix: Use recordedBy property name from data object
         recorded_by: data.recordedBy,
         voided: false
       }])
@@ -513,7 +538,6 @@ class DatabaseService {
   }
 
   async updateSettings(updates: Partial<AppSettings>) {
-    // Attempt to get current ID first, else default
     const current = await this.getSettings();
     const id = current.id === 'default' ? 'global-settings' : current.id;
     
