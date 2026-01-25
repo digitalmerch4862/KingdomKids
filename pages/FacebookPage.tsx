@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Facebook, ExternalLink, Loader2, AlertCircle, RefreshCw, Smartphone } from 'lucide-react';
 
@@ -138,9 +139,9 @@ const FacebookPage: React.FC = () => {
         
         <button 
           onClick={openNativeApp}
-          className="w-full md:w-auto flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest bg-[#202020] border border-gray-700 hover:border-white px-6 py-3 rounded-xl transition-all hover:bg-white hover:text-black active:scale-95"
+          className="w-full md:w-auto flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest bg-[#202020] border border-gray-700 hover:border-white px-6 py-4 rounded-xl transition-all hover:bg-white hover:text-black active:scale-95 shadow-lg"
         >
-          <Smartphone size={14} /> Open App
+          <Smartphone size={14} /> Click here and follow us
         </button>
       </div>
 
@@ -178,9 +179,9 @@ const FacebookPage: React.FC = () => {
               
               <button 
                 onClick={openNativeApp}
-                className="w-full bg-[#1877F2] text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-[#1864cc] transition-all flex items-center justify-center gap-2"
+                className="w-full bg-[#1877F2] text-white px-6 py-4 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#1864cc] transition-all flex items-center justify-center gap-2 shadow-xl"
               >
-                Open Facebook App <ExternalLink size={14} />
+                Click here and follow us <ExternalLink size={14} />
               </button>
             </div>
           </div>

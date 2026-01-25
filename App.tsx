@@ -49,12 +49,16 @@ const App: React.FC = () => {
 
   const isTeacherOrAdmin = user?.role === 'TEACHER' || user?.role === 'ADMIN';
   const isAdmin = user?.role === 'ADMIN';
+  const isGuest = user?.username.toUpperCase() === 'GUEST';
 
   return (
     <HashRouter>
       <Routes>
         <Route path="/login" element={
-          user ? (user.role === 'PARENTS' ? <Navigate to="/portal" replace /> : <Navigate to="/admin" replace />) : <LoginPage onLogin={handleLogin} />
+          user ? (
+            isGuest ? <Navigate to="/leaderboard" replace /> :
+            (user.role === 'PARENTS' ? <Navigate to="/portal" replace /> : <Navigate to="/admin" replace />)
+          ) : <LoginPage onLogin={handleLogin} />
         } />
         
         <Route element={<Layout user={user} onLogout={handleLogout} />}>
@@ -123,7 +127,10 @@ const App: React.FC = () => {
           } />
 
           <Route path="/portal" element={
-             !user ? <Navigate to="/login" replace /> : (user.role === 'PARENTS' ? <StudentPortalPage user={user} /> : <Navigate to="/admin" replace />)
+             !user ? <Navigate to="/login" replace /> : (
+               isGuest ? <Navigate to="/leaderboard" replace /> :
+               (user.role === 'PARENTS' ? <StudentPortalPage user={user} /> : <Navigate to="/admin" replace />)
+             )
           } />
 
           <Route path="/teacher/scan" element={
@@ -131,7 +138,7 @@ const App: React.FC = () => {
           } />
         </Route>
 
-        <Route path="*" element={<Navigate to={user ? (user.role === 'PARENTS' ? "/portal" : "/admin") : "/login"} replace />} />
+        <Route path="*" element={<Navigate to={user ? (isGuest ? "/leaderboard" : (user.role === 'PARENTS' ? "/portal" : "/admin")) : "/login"} replace />} />
       </Routes>
     </HashRouter>
   );

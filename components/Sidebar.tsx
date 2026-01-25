@@ -4,6 +4,7 @@ import { NavLink, Link } from 'react-router-dom';
 import { UserSession } from '../types';
 import { audio } from '../services/audio.service';
 import { db } from '../services/db.service';
+import NetworkStatusDot from './NetworkStatusDot';
 import { 
   LayoutDashboard, 
   BookOpen,
@@ -53,6 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
 
   const isTeacherOrAdmin = user.role === 'TEACHER' || user.role === 'ADMIN';
   const isRad = user.username.toLowerCase() === 'rad';
+  const isGuest = user.username.toUpperCase() === 'GUEST';
 
   const teacherItems: SidebarItem[] = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
@@ -72,7 +74,10 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
     { label: 'FB Feed', icon: Facebook, path: '/facebook' }, 
   ];
 
-  const menuItems = isTeacherOrAdmin ? teacherItems : parentItems;
+  // Logic: Filter out 'My Portal' for Guest accounts to keep demo clean
+  const menuItems = isTeacherOrAdmin 
+    ? teacherItems 
+    : parentItems.filter(item => !(isGuest && item.path === '/portal'));
 
   const sidebarClasses = `
     w-64 bg-white border-r border-pink-100 flex flex-col fixed inset-y-0 left-0 z-[56] transition-transform duration-300 ease-in-out
@@ -80,16 +85,23 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
     ${isDesktopOpen ? 'md:translate-x-0' : 'md:-translate-x-full'}
   `;
 
+  const getHomePath = () => {
+    if (isTeacherOrAdmin) return '/admin';
+    if (isGuest) return '/leaderboard';
+    return '/portal';
+  };
+
   return (
     <aside className={sidebarClasses}>
       <div className="p-6 overflow-y-auto flex-1 flex flex-col">
         <div className="flex items-center justify-between mb-10 shrink-0">
           <Link 
-            to={user.role === 'PARENTS' ? '/portal' : '/admin'}
+            to={getHomePath()}
             onClick={() => { audio.playClick(); if(onClose) onClose(); }}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-1 hover:opacity-80 transition-opacity"
           >
             <h1 className="text-sm font-black text-pink-500 tracking-tighter leading-tight uppercase">Kingdom Kids</h1>
+            <NetworkStatusDot />
           </Link>
           <button className="md:hidden text-gray-400" onClick={onClose}>
             <X size={24} />
@@ -162,7 +174,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
           <div className="flex flex-col overflow-hidden">
             <span className="text-xs font-black text-gray-800 truncate uppercase tracking-tight">{user.username}</span>
             <span className="text-[9px] font-black text-pink-400 uppercase tracking-widest truncate">
-              {user.role === 'PARENTS' ? 'Parent/Student' : (user.role === 'ADMIN' ? 'Admin Teacher' : 'Teacher')}
+              {user.role === 'PARENTS' ? (isGuest ? 'Guest Access' : 'Parent/Student') : (user.role === 'ADMIN' ? 'Admin Teacher' : 'Teacher')}
             </span>
           </div>
         </div>

@@ -380,7 +380,7 @@ const ControlCenterPage: React.FC = () => {
           <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-gray-100 flex flex-col justify-center text-center space-y-4">
              <div className="text-3xl">📝</div>
              <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] leading-relaxed">
-               Logic updated: Monthly 5-Week Dashboard view implementation complete.<br/>
+               Logic updated: Guest accounts now restricted from viewing the Student Portal.<br/>
                <span className="text-pink-400 mt-2 block">- KINGDOM KIDS DEV TEAM -</span>
              </p>
           </div>

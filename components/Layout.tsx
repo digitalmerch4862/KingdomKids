@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { UserSession } from '../types';
 import Sidebar from './Sidebar';
+import NetworkStatusDot from './NetworkStatusDot';
 
 interface LayoutProps {
   user: UserSession | null;
@@ -20,8 +21,9 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout }) => {
       {/* Mobile Header */}
       {user && (
         <div className="md:hidden flex items-center justify-between p-4 bg-white/80 backdrop-blur-md border-b border-pink-100 sticky top-0 z-[60] shrink-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <h1 className="text-xs font-black text-pink-500 uppercase tracking-tighter">Kingdom Kids</h1>
+            <NetworkStatusDot />
           </div>
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
