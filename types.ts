@@ -1,10 +1,10 @@
 
-export type AgeGroup = "3-6" | "7-9" | "10-12";
+export type AgeGroup = "3-6" | "7-9" | "10-12" | "Adult" | "Guest";
 export type UserRole = "ADMIN" | "TEACHER" | "PARENTS";
 export type FaceAngle = "front" | "left" | "right";
 export type CheckoutMode = "MANUAL" | "AUTO";
 export type SessionStatus = "OPEN" | "CLOSED";
-export type StudentStatus = "active" | "frozen";
+export type StudentStatus = "active" | "frozen" | "alumni" | "guest" | "student";
 
 export interface Student {
   id: string;
@@ -24,6 +24,10 @@ export interface Student {
   studentStatus: StudentStatus;
   lastFollowupSent?: string;
   guardianNickname?: string;
+  // Manual Entry / Legacy Fields
+  currentRole?: string;
+  batchYear?: string;
+  isLegacy?: boolean;
 }
 
 export interface FaceEmbedding {

@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { db, formatError } from '../services/db.service';
 import { MinistryService } from '../services/ministry.service';
 import { ActivitySchedule, AttendanceSession, Student, UserSession } from '../types';
 import { audio } from '../services/audio.service';
 import { Search, X, UserPlus, UserPlus2, TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
+import ManualEntryForm from '../components/ManualEntryForm';
 
 const getFirstName = (fullName: string) => {
   if (!fullName) return "Student";
@@ -22,10 +23,12 @@ interface WeekStats {
   presentCount: number;
   pointsIssued: number;
   label: string;
+  dateStr: string;
 }
 
 const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activity }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [now, setNow] = useState(new Date());
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -45,17 +48,31 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
   const [birthdays, setBirthdays] = useState<Student[]>([]);
   const [error, setError] = useState('');
   
-  // Manual Check-in States
   const [showManualModal, setShowManualModal] = useState(false);
   const [manualSearch, setManualSearch] = useState('');
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [isCheckingIn, setIsCheckingIn] = useState<string | null>(null);
 
-  // Identify User
+  const [showManualEntryModal, setShowManualEntryModal] = useState(false);
+  const [manualEntryType, setManualEntryType] = useState<'alumni' | 'guest'>('guest');
+
   const sessionStr = localStorage.getItem('km_session');
   const user: UserSession | null = sessionStr ? JSON.parse(sessionStr) : null;
 
-  // Update clock every minute
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('tab') === 'manual') {
+      const type = params.get('type') as 'alumni' | 'guest';
+      setManualEntryType(type || 'guest');
+      setShowManualEntryModal(true);
+    }
+  }, [location.search]);
+
+  const closeManualEntry = () => {
+    setShowManualEntryModal(false);
+    navigate('/admin', { replace: true });
+  };
+
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
@@ -75,65 +92,51 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
       const todayPoints = ledger.filter(l => l.entryDate === todayStr && !l.voided).reduce((sum, curr) => sum + curr.points, 0);
       
       const actualRate = students.length > 0 ? Math.round((currentSessions.length / students.length) * 100) : 0;
-      const rate = Math.min(actualRate, 100);
 
       const sessionsWithDetails = currentSessions.map(sess => ({
         ...sess,
         student: students.find(s => s.id === sess.studentId)
       }));
 
-      // --- WEEKLY COMPARISON LOGIC ---
+      // --- DYNAMIC SUNDAY LOGIC ---
       const year = todayDate.getFullYear();
       const month = todayDate.getMonth();
       const monthName = todayDate.toLocaleString('default', { month: 'long' });
-      const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
 
-      const weekDefinitions = [
-        { start: 1, end: 7, label: 'Week 1' },
-        { start: 8, end: 14, label: 'Week 2' },
-        { start: 15, end: 21, label: 'Week 3' },
-        { start: 22, end: 28, label: 'Week 4' },
-        { start: 29, end: lastDayOfMonth, label: 'Week 5' },
-      ];
+      // Find all Sundays in this month
+      const sundays: Date[] = [];
+      const d = new Date(year, month, 1);
+      while (d.getDay() !== 0) d.setDate(d.getDate() + 1);
+      while (d.getMonth() === month) {
+        sundays.push(new Date(d));
+        d.setDate(d.getDate() + 7);
+      }
 
-      const calculateWeekStats = (startDay: number, endDay: number, weekNum: number, label: string): WeekStats | null => {
-        if (startDay > lastDayOfMonth) return null;
-        
-        const start = new Date(year, month, startDay);
-        const end = new Date(year, month, endDay);
-        const startStr = start.toISOString().split('T')[0];
-        const endStr = end.toISOString().split('T')[0];
-
-        const weekSessions = sessions.filter(s => s.sessionDate >= startStr && s.sessionDate <= endStr);
+      const weeksData = sundays.map((sun, idx) => {
+        const dateStr = sun.toISOString().split('T')[0];
+        const weekSessions = sessions.filter(s => s.sessionDate === dateStr);
         const uniquePresent = new Set(weekSessions.map(s => s.studentId)).size;
-        const weekPoints = ledger.filter(l => l.entryDate >= startStr && l.entryDate <= endStr && !l.voided)
+        const weekPoints = ledger.filter(l => l.entryDate === dateStr && !l.voided)
                                 .reduce((sum, curr) => sum + curr.points, 0);
         
         const weekRate = students.length > 0 ? Math.round((uniquePresent / students.length) * 100) : 0;
 
         return {
-          weekNumber: weekNum,
+          weekNumber: idx + 1,
           attendanceRate: weekRate,
           presentCount: uniquePresent,
           pointsIssued: weekPoints,
-          label
+          label: sun.toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase(),
+          dateStr
         };
-      };
-
-      const weeksData = weekDefinitions
-        .map((wd, i) => calculateWeekStats(wd.start, wd.end, i + 1, wd.label))
-        .filter((w): w is WeekStats => w !== null);
-
-      setWeeklyComparison({
-        weeks: weeksData,
-        monthName
       });
 
+      setWeeklyComparison({ weeks: weeksData, monthName });
       setStats({
         totalStudents: students.length,
         checkedInCount: currentSessions.length,
         absentCount: students.length - currentSessions.length,
-        attendanceRate: rate,
+        attendanceRate: Math.min(actualRate, 100),
         totalPointsToday: todayPoints
       });
       setActiveSessions(sessionsWithDetails);
@@ -143,8 +146,7 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
       const classStats = await MinistryService.getClassroomStats();
       setClassrooms(classStats);
     } catch (err: any) {
-      const formatted = formatError(err);
-      setError(formatted);
+      setError(formatError(err));
     }
   }
 
@@ -156,7 +158,6 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
     if (!user) return;
     setIsCheckingIn(student.id);
     audio.playClick();
-    
     try {
       await MinistryService.checkIn(student.id, user.username);
       audio.playYehey();
@@ -172,7 +173,6 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
   const filteredManualList = useMemo(() => {
     if (!manualSearch.trim()) return [];
     const checkedInIds = new Set(activeSessions.map(s => s.studentId));
-    
     return allStudents.filter(s => 
       !checkedInIds.has(s.id) && 
       (s.fullName.toLowerCase().includes(manualSearch.toLowerCase()) || 
@@ -180,38 +180,22 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
     ).slice(0, 5);
   }, [allStudents, manualSearch, activeSessions]);
 
-  const formattedDate = now.toLocaleDateString('en-US', {
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric'
-  }).toUpperCase().replace(/,/g, '').replace(/\s+/g, '-');
-
-  const formattedTime = now.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
+  const formattedDate = now.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase().replace(/,/g, '').replace(/\s+/g, '-');
+  const formattedTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   const TrendIndicator = ({ current, previous }: { current: number, previous?: number }) => {
     if (previous === undefined || current === previous) return <Minus size={12} className="text-gray-300" />;
-    return current > previous 
-      ? <TrendingUp size={12} className="text-green-500" /> 
-      : <TrendingDown size={12} className="text-red-500" />;
+    return current > previous ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />;
   };
 
   if (error) {
-    const isMissingTable = error.includes('not found') || error.includes('does not exist') || error.includes('404');
     return (
       <div className="p-10 bg-white rounded-[3rem] border border-red-100 shadow-sm text-center space-y-6">
-        <div className="text-6xl">{isMissingTable ? '🏗️' : '⚠️'}</div>
-        <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tighter">
-          {isMissingTable ? 'Database Setup Required' : 'System Error'}
-        </h2>
+        <div className="text-6xl">⚠️</div>
+        <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tighter">System Error</h2>
         <p className="text-red-500 font-bold text-xs uppercase tracking-widest max-w-lg mx-auto leading-relaxed">{error}</p>
         <div className="pt-6">
-          <button onClick={() => navigate('/admin/sql')} className="bg-pink-500 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-pink-100 transition-all hover:bg-pink-600 active:scale-95">
-            Go to SQL Terminal to Setup
-          </button>
+          <button onClick={() => navigate('/admin/sql')} className="bg-pink-500 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-pink-100 transition-all hover:bg-pink-600 active:scale-95">Go to SQL Terminal</button>
         </div>
       </div>
     );
@@ -248,16 +232,16 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
         </div>
       </div>
 
-      {/* Full Weekly Comparison Section */}
+      {/* Dynamic Sundays Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <Calendar size={16} className="text-pink-500" />
             <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest">
-              {weeklyComparison?.monthName} Weekly Progression
+              {weeklyComparison?.monthName} Sunday Progression
             </h3>
           </div>
-          <span className="text-[9px] font-bold text-pink-300 uppercase tracking-tighter bg-pink-50 px-3 py-1 rounded-full border border-pink-100">Performance Tracking</span>
+          <span className="text-[9px] font-bold text-pink-300 uppercase tracking-tighter bg-pink-50 px-3 py-1 rounded-full border border-pink-100">Live Monthly Performance</span>
         </div>
 
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-pink-50 overflow-hidden">
@@ -265,7 +249,7 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50/50 text-[10px] font-bold text-pink-400 uppercase tracking-widest border-b border-pink-50">
-                  <th className="px-8 py-6">Week Period</th>
+                  <th className="px-8 py-6">Sunday Date</th>
                   <th className="px-8 py-6">Attendance Rate</th>
                   <th className="px-8 py-6">Unique Kids</th>
                   <th className="px-8 py-6">Stars Awarded</th>
@@ -273,11 +257,11 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
               </thead>
               <tbody className="divide-y divide-pink-50/30">
                 {weeklyComparison?.weeks.map((week, idx) => (
-                  <tr key={week.weekNumber} className="hover:bg-pink-50/10 transition-colors group">
+                  <tr key={week.dateStr} className="hover:bg-pink-50/10 transition-colors group">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 rounded-xl bg-pink-50 text-pink-500 flex items-center justify-center font-black text-xs">
-                          {week.weekNumber}
+                        <span className="w-8 h-8 rounded-xl bg-pink-50 text-pink-500 flex items-center justify-center font-black text-[10px]">
+                          {idx + 1}
                         </span>
                         <span className="font-black text-gray-800 uppercase tracking-tight text-xs">{week.label}</span>
                       </div>
@@ -289,9 +273,6 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
                           current={week.attendanceRate} 
                           previous={idx > 0 ? weeklyComparison.weeks[idx-1].attendanceRate : undefined} 
                         />
-                      </div>
-                      <div className="w-24 bg-gray-100 h-1 rounded-full mt-2 overflow-hidden">
-                        <div className="bg-pink-500 h-full" style={{ width: `${week.attendanceRate}%` }}></div>
                       </div>
                     </td>
                     <td className="px-8 py-6">
@@ -320,7 +301,6 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
         </div>
       </div>
 
-      {/* Manual Check-in Modal */}
       {showManualModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
@@ -368,9 +348,13 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
         </div>
       )}
 
-      {/* Birthdays & Live Classrooms (Secondary stats) */}
+      {showManualEntryModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <ManualEntryForm initialType={manualEntryType} onClose={closeManualEntry} onSuccess={loadDashboard} />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Birthdays This Month */}
         {birthdays.length > 0 && (
           <div className="bg-[#FFF9E6] p-6 md:p-8 rounded-[2.5rem] border-2 border-dashed border-amber-200 shadow-sm relative overflow-hidden h-fit">
             <div className="relative z-10">
@@ -381,7 +365,7 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
               <div className="flex flex-wrap gap-4 overflow-x-auto pb-4 custom-scrollbar">
                 {birthdays.map((b, i) => (
                   <div key={b.id} className={`bg-white p-4 rounded-xl shadow-md border-b-4 border-amber-300 transform transition-transform w-32 shrink-0 hover:rotate-0 hover:scale-105 ${i % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}>
-                    <p className="text-[10px] font-black text-gray-800 uppercase leading-tight mb-2 truncate" title={b.fullName}>{getFirstName(b.fullName)}</p>
+                    <p className="text-[10px] font-black text-gray-800 uppercase leading-tight mb-2 truncate">{getFirstName(b.fullName)}</p>
                     <div className="flex justify-between items-end">
                         <span className="text-[14px] font-black text-amber-500">{new Date(b.birthday).getDate()}</span>
                         <span className="text-[8px] font-bold text-gray-300 uppercase tracking-tighter">{b.ageGroup}</span>
@@ -393,7 +377,6 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
           </div>
         )}
 
-        {/* Classroom Summary Grid */}
         <div className="space-y-4">
           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Live Classroom Pulse</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -410,7 +393,6 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
         </div>
       </div>
 
-      {/* Active Sessions List */}
       <div className="space-y-4">
         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Live Feed (Arrivals)</h3>
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-pink-50 overflow-hidden">
@@ -446,11 +428,6 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
           </div>
         </div>
       </div>
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { height: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #fcd34d; border-radius: 10px; }
-      `}</style>
     </div>
   );
 };
