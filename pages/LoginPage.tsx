@@ -211,9 +211,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       
       const firstName = getFirstName(formData.fullName).toUpperCase();
       const studentNo = result.access_key;
-      const smsMsg = `Welcome to Kingdom Kids! ${firstName}'s registration is complete. Access Key: ${studentNo}. Please save this for check-in and portal access.`;
       
-      window.location.href = `sms:${formData.guardianPhone}?body=${encodeURIComponent(smsMsg)}`;
+      // AUTO-COMPOSE SMS LOGIC
+      const smsMsg = `This message is auto-composed for you to receive the access key of your registered kid. Welcome to Kingdom Kids! Student: ${firstName}, Access Key: ${studentNo}. Please save this key for check-in and portal access. See you at the Kingdom! 👑`;
+      window.location.href = "sms:" + formData.guardianPhone + "?body=" + encodeURIComponent(smsMsg);
       
       audio.playYehey();
       setNewAccessKey(studentNo);
@@ -345,19 +346,21 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 <div className="flex-grow border-t border-gray-100"></div>
               </div>
 
+              {/* Redesigned Sign Up Button */}
               <button 
                 onClick={() => { audio.playClick(); setShowRegisterModal(true); }}
                 onMouseEnter={() => audio.playHover()}
-                className="w-full py-4 text-pink-500 font-black text-[11px] uppercase tracking-widest hover:bg-pink-50 rounded-2xl transition-all border border-pink-100 border-dashed"
+                className="w-full py-6 text-pink-500 font-black text-xl uppercase tracking-widest hover:bg-pink-50 rounded-3xl transition-all border-4 border-pink-200 border-dashed shadow-lg"
               >
                 ✨ Sign Up My Kids
               </button>
               
+              {/* Redesigned Guest Button */}
               <div className="mt-2 text-center">
                 <button 
                   type="button"
                   onClick={() => { audio.playClick(); onLogin('PARENTS', 'GUEST', 'GUEST_DEMO'); }}
-                  className="text-[10px] font-bold text-gray-300 hover:text-pink-500 uppercase tracking-widest transition-colors border-b border-transparent hover:border-pink-300"
+                  className="w-full bg-gray-100 text-black font-black py-4 rounded-2xl transition-all border-2 border-black text-lg uppercase tracking-widest hover:bg-gray-200 active:scale-[0.98]"
                 >
                   Continue as Guest
                 </button>

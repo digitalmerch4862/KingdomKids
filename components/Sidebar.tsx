@@ -16,9 +16,8 @@ import {
   X,
   MessageSquare,
   Settings,
-  Clapperboard,
-  Facebook,
-  PlayCircle
+  PlayCircle,
+  Facebook
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -27,6 +26,7 @@ interface SidebarProps {
   isOpen?: boolean;
   isDesktopOpen?: boolean;
   onClose?: () => void;
+  onToggleSidebar?: () => void;
 }
 
 interface SidebarItem {
@@ -37,11 +37,10 @@ interface SidebarItem {
   isExternal?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen = true, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen = true, onClose, onToggleSidebar }) => {
   const [followUpCount, setFollowUpCount] = useState(0);
 
   useEffect(() => {
-    // Fetch follow-up count on mount if teacher/admin
     if (user && (user.role === 'TEACHER' || user.role === 'ADMIN')) {
       db.getStudents().then(students => {
         const count = students.filter(s => s.consecutiveAbsences > 0 && s.studentStatus === 'active').length;
@@ -53,6 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
   if (!user) return null;
 
   const isTeacherOrAdmin = user.role === 'TEACHER' || user.role === 'ADMIN';
+  const isRad = user.username.toLowerCase() === 'rad';
 
   const teacherItems: SidebarItem[] = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
@@ -62,7 +62,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
     { label: 'Points Ledger', icon: Star, path: '/admin/points' },
     { label: 'Fairness Monitor', icon: Scale, path: '/admin/fairness' },
     { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
-    { label: 'Faith Pathway', icon: BookOpen, path: '/admin/faith-pathway' },
   ];
 
   const parentItems: SidebarItem[] = [
@@ -97,62 +96,38 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
         </div>
 
         <nav className="space-y-1.5 flex-1">
-          {menuItems.map((item) => {
-            if (item.isExternal) {
-              return (
-                <a
-                  key={item.path}
-                  href={item.path}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onMouseEnter={() => audio.playHover()}
-                  onClick={() => {
-                    audio.playClick();
-                    if (onClose) onClose();
-                  }}
-                  className="flex items-center justify-between px-5 py-3.5 rounded-2xl font-black transition-all uppercase tracking-widest text-[10px] text-gray-400 hover:bg-pink-50/50 hover:text-pink-500"
-                >
-                  <div className="flex items-center gap-3">
-                    <item.icon className="w-5 h-5" strokeWidth={2.5} />
-                    <span>{item.label}</span>
-                  </div>
-                </a>
-              );
-            }
-            
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === '/admin'}
-                onMouseEnter={() => audio.playHover()}
-                onClick={() => {
-                  audio.playClick();
-                  if (onClose) onClose();
-                }}
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-5 py-3.5 rounded-2xl font-black transition-all uppercase tracking-widest text-[10px] ${
-                    isActive
-                      ? 'bg-pink-500 text-white shadow-xl shadow-pink-100 translate-x-1'
-                      : 'text-gray-400 hover:bg-pink-50/50 hover:text-pink-500'
-                  }`
-                }
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon className="w-5 h-5" strokeWidth={2.5} />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge && (
-                  <span className="bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-md">
-                    {item.badge}
-                  </span>
-                )}
-              </NavLink>
-            );
-          })}
+          {menuItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === '/admin'}
+              onMouseEnter={() => audio.playHover()}
+              onClick={() => {
+                audio.playClick();
+                if (onClose) onClose();
+              }}
+              className={({ isActive }) =>
+                `flex items-center justify-between px-5 py-3.5 rounded-2xl font-black transition-all uppercase tracking-widest text-[10px] ${
+                  isActive
+                    ? 'bg-pink-500 text-white shadow-xl shadow-pink-100 translate-x-1'
+                    : 'text-gray-400 hover:bg-pink-50/50 hover:text-pink-500'
+                }`
+              }
+            >
+              <div className="flex items-center gap-3">
+                <item.icon className="w-5 h-5" strokeWidth={2.5} />
+                <span>{item.label}</span>
+              </div>
+              {item.badge && (
+                <span className="bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-md">
+                  {item.badge}
+                </span>
+              )}
+            </NavLink>
+          ))}
         </nav>
 
-        {isTeacherOrAdmin && user.username === 'RAD' && (
+        {isTeacherOrAdmin && isRad && (
           <div className="mt-4 pt-4 border-t border-pink-50 shrink-0">
              <NavLink
               to="/admin/control-center"
@@ -178,8 +153,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
         )}
       </div>
 
-      <div className="mt-auto p-6 border-t border-pink-50 bg-gray-50/30">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="mt-auto p-6 border-t border-pink-50 bg-gray-50/30 space-y-2">
+        <div className="flex items-center gap-3 mb-4">
           <div className="w-11 h-11 bg-pink-100 rounded-2xl flex items-center justify-center text-pink-500 font-black text-lg border-2 border-white shadow-sm shrink-0">
             {user.username[0]}
           </div>
@@ -190,10 +165,32 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
             </span>
           </div>
         </div>
+
+        {isTeacherOrAdmin && (
+          <NavLink
+            to="/admin/faith-pathway"
+            onMouseEnter={() => audio.playHover()}
+            onClick={() => {
+              audio.playClick();
+              if (onClose) onClose();
+            }}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all ${
+                isActive
+                  ? 'bg-pink-500 text-white shadow-lg'
+                  : 'text-gray-400 hover:bg-pink-50 hover:text-pink-500 text-pink-500'
+              }`
+            }
+          >
+            <BookOpen className="w-4 h-4" strokeWidth={2.5} />
+            <span>Faith Pathway</span>
+          </NavLink>
+        )}
+
         <button
           onMouseEnter={() => audio.playHover()}
           onClick={() => { audio.playClick(); onLogout(); }}
-          className="w-full flex items-center gap-2 px-4 py-3 text-[10px] font-black text-gray-300 hover:text-pink-600 transition-colors uppercase tracking-widest group"
+          className="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-black text-gray-300 hover:text-pink-600 transition-colors uppercase tracking-widest group"
         >
           <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
           <span>Sign Out</span>
