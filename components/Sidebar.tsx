@@ -62,6 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
     { label: 'Points Ledger', icon: Star, path: '/admin/points' },
     { label: 'Fairness Monitor', icon: Scale, path: '/admin/fairness' },
     { label: 'Leaderboard', icon: Trophy, path: '/leaderboard' },
+    { label: 'Faith Pathway', icon: BookOpen, path: '/admin/faith-pathway' },
   ];
 
   const parentItems: SidebarItem[] = [
@@ -165,27 +166,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user, onLogout, isOpen, isDesktopOpen
             </span>
           </div>
         </div>
-
-        {isTeacherOrAdmin && (
-          <NavLink
-            to="/admin/faith-pathway"
-            onMouseEnter={() => audio.playHover()}
-            onClick={() => {
-              audio.playClick();
-              if (onClose) onClose();
-            }}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all ${
-                isActive
-                  ? 'bg-pink-500 text-white shadow-lg'
-                  : 'text-gray-400 hover:bg-pink-50 hover:text-pink-500 text-pink-500'
-              }`
-            }
-          >
-            <BookOpen className="w-4 h-4" strokeWidth={2.5} />
-            <span>Faith Pathway</span>
-          </NavLink>
-        )}
 
         <button
           onMouseEnter={() => audio.playHover()}
