@@ -4,7 +4,7 @@ import { db, formatError } from '../services/db.service';
 import { MinistryService } from '../services/ministry.service';
 import { AppSettings, UserSession } from '../types';
 import { audio } from '../services/audio.service';
-import { Settings, Save, AlertTriangle, Star, CheckCircle, Flame, RefreshCcw } from 'lucide-react';
+import { Settings, Save, AlertTriangle, Star, CheckCircle, Flame, RefreshCcw, ShieldCheck, FileText, Info } from 'lucide-react';
 
 const ControlCenterPage: React.FC = () => {
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -291,6 +291,100 @@ const ControlCenterPage: React.FC = () => {
             </>
           )}
         </button>
+      </div>
+
+      {/* --- SYSTEM RULINGS REFERENCE SECTION (Bottom) --- */}
+      <div className="mt-12 space-y-6 animate-in slide-in-from-bottom-4 duration-700">
+        <div className="flex items-center gap-3 px-1">
+          <ShieldCheck className="text-blue-500" size={24} />
+          <h3 className="text-xl font-black text-gray-800 uppercase tracking-tighter">System Rulings & Logic</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Ruling Card 1: Access & Attendance */}
+          <div className="bg-blue-50/30 p-8 rounded-[2.5rem] border border-blue-100 space-y-4">
+             <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                  <Info size={16} />
+                </div>
+                <h4 className="text-[11px] font-black text-blue-700 uppercase tracking-widest">Access & Attendance</h4>
+             </div>
+             <ul className="space-y-3">
+               {[
+                 { t: "Role Hierarchy", d: "ADMIN/RAD (Full), TEACHER (Standard), PARENTS (Portal)." },
+                 { t: "Passwords", d: "Admin: 6244 | Teacher: pro226 | Parent: 123" },
+                 { t: "Check-In Policy", d: "One 'OPEN' session per day. Manual or Scan resets absence streak." },
+                 { t: "Attendance Reward", d: "Successful check-in auto-awards 5 Stars (Daily Sunday reward)." },
+                 { t: "Absence Sweep", d: "Run manually at 'End Service'. Unrecorded kids marked ABSENT." },
+                 { t: "Freezing Logic", d: "4 consecutive absences = Frozen Status (High Priority Follow-up)." }
+               ].map((item, i) => (
+                 <li key={i} className="flex flex-col gap-0.5">
+                   <span className="text-[10px] font-black text-blue-800 uppercase tracking-tight">{item.t}</span>
+                   <span className="text-[9px] font-bold text-blue-600/70 uppercase tracking-tighter leading-tight">{item.d}</span>
+                 </li>
+               ))}
+             </ul>
+          </div>
+
+          {/* Ruling Card 2: Points & AI */}
+          <div className="bg-amber-50/30 p-8 rounded-[2.5rem] border border-amber-100 space-y-4">
+             <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
+                  <Star size={16} fill="currentColor" />
+                </div>
+                <h4 className="text-[11px] font-black text-amber-700 uppercase tracking-widest">Points & AI Logic</h4>
+             </div>
+             <ul className="space-y-3">
+               {[
+                 { t: "Daily Star Limit", d: "Hard cap of 50 points per student per Sunday for fairness." },
+                 { t: "Voiding Rule", d: "Admin only. Requires audit reason. Entries stay but zeroed." },
+                 { t: "Season Reset", d: "Archives all current points as 'Voided: Reset'. Balances go to 0." },
+                 { t: "Face Matching", d: "0.78 similarity default. Unknown faces log an audit error." },
+                 { t: "Growth Ranks", d: "Seed (0), Sprout (100), Rooted (300), Branch (600), Fruit (1000)." },
+                 { t: "Gemini Quest", d: "Unique Bible stories generated based on rank and history." }
+               ].map((item, i) => (
+                 <li key={i} className="flex flex-col gap-0.5">
+                   <span className="text-[10px] font-black text-amber-800 uppercase tracking-tight">{item.t}</span>
+                   <span className="text-[9px] font-bold text-amber-600/70 uppercase tracking-tighter leading-tight">{item.d}</span>
+                 </li>
+               ))}
+             </ul>
+          </div>
+
+          {/* Ruling Card 3: Data & Monitoring */}
+          <div className="bg-purple-50/30 p-8 rounded-[2.5rem] border border-purple-100 space-y-4">
+             <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
+                  <FileText size={16} />
+                </div>
+                <h4 className="text-[11px] font-black text-purple-700 uppercase tracking-widest">Data & Monitoring</h4>
+             </div>
+             <ul className="space-y-3">
+               {[
+                 { t: "Access Keys", d: "KK-YYYYMMDD-XX (Birthday-based or Random for Guest)." },
+                 { t: "ID Badges", d: "Standard 626x626px square PNG with QR and Student Nickname." },
+                 { t: "Weakest Link", d: "Fairness monitor alerts for students < 50% of monthly average." },
+                 { t: "Monthly Dashboard", d: "Current Month Only: Compares Weekly progression (W1 to W5)." },
+                 { t: "Auto-Checkout", d: "Force-closes open sessions at set time (e.g. 1:00 PM)." },
+                 { t: "Audit Logging", d: "Every point award, void, check-in, and reset is logged." }
+               ].map((item, i) => (
+                 <li key={i} className="flex flex-col gap-0.5">
+                   <span className="text-[10px] font-black text-purple-800 uppercase tracking-tight">{item.t}</span>
+                   <span className="text-[9px] font-bold text-purple-600/70 uppercase tracking-tighter leading-tight">{item.d}</span>
+                 </li>
+               ))}
+             </ul>
+          </div>
+
+          {/* Note Card */}
+          <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-gray-100 flex flex-col justify-center text-center space-y-4">
+             <div className="text-3xl">📝</div>
+             <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] leading-relaxed">
+               Logic updated: Monthly 5-Week Dashboard view implementation complete.<br/>
+               <span className="text-pink-400 mt-2 block">- KINGDOM KIDS DEV TEAM -</span>
+             </p>
+          </div>
+        </div>
       </div>
     </div>
   );
