@@ -1,9 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Initialize the API using the strict process.env.API_KEY as required.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export class FaceService {
   static async generateEmbedding(base64Image: string): Promise<number[]> {
     if (!process.env.API_KEY) {
@@ -13,20 +10,24 @@ export class FaceService {
     }
 
     try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       // Remove header if present to get pure base64
       const cleanBase64 = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
 
+      // Fix: Structure contents with parts array for multi-part request
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: [
-          {
-            inlineData: {
-              mimeType: 'image/jpeg',
-              data: cleanBase64
-            }
-          },
-          { text: "Generate a unique 128-float array representation (embedding) of the person's face in this image. Ensure the output is JUST a JSON array of 128 floats." }
-        ],
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                mimeType: 'image/jpeg',
+                data: cleanBase64
+              }
+            },
+            { text: "Generate a unique 128-float array representation (embedding) of the person's face in this image. Ensure the output is JUST a JSON array of 128 floats." }
+          ]
+        },
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -76,6 +77,7 @@ export class GeminiService {
     if (!process.env.API_KEY) return "KEEP SHINING FOR JESUS! (ADD API KEY TO ENABLE AI ADVICE)";
 
     try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = `You are a friendly and encouraging mentor for a child in 'Kingdom Kids' church ministry. 
         The child, ${name}, has ${points} points and is ranked #${rank} in the ${ageGroup} age group. 
         Give 3 short, specific, fun, and biblical tips on how they can earn more points 

@@ -131,22 +131,23 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
         };
       });
 
+      // Complete the truncated component logic
       setWeeklyComparison({ weeks: weeksData, monthName });
       setStats({
         totalStudents: students.length,
         checkedInCount: currentSessions.length,
         absentCount: students.length - currentSessions.length,
-        attendanceRate: Math.min(actualRate, 100),
+        attendanceRate: actualRate,
         totalPointsToday: todayPoints
       });
       setActiveSessions(sessionsWithDetails);
       setBirthdays(bdays);
+      
+      const classroomStats = await MinistryService.getClassroomStats();
+      setClassrooms(classroomStats);
       setAllStudents(students);
-
-      const classStats = await MinistryService.getClassroomStats();
-      setClassrooms(classStats);
-    } catch (err: any) {
-      setError(formatError(err));
+    } catch (e: any) {
+      setError(formatError(e));
     }
   }
 
@@ -154,195 +155,207 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
     loadDashboard();
   }, []);
 
-  const handleManualCheckIn = async (student: Student) => {
-    if (!user) return;
-    setIsCheckingIn(student.id);
+  const handleManualCheckIn = async (studentId: string) => {
+    if (isCheckingIn) return;
+    setIsCheckingIn(studentId);
     audio.playClick();
     try {
-      await MinistryService.checkIn(student.id, user.username);
+      await MinistryService.checkIn(studentId, user?.username || 'ADMIN');
       audio.playYehey();
       loadDashboard();
-      setManualSearch('');
-    } catch (err: any) {
-      alert(err.message || "Check-in failed");
+    } catch (e: any) {
+      alert(e.message);
     } finally {
       setIsCheckingIn(null);
     }
   };
 
-  const filteredManualList = useMemo(() => {
-    if (!manualSearch.trim()) return [];
-    const checkedInIds = new Set(activeSessions.map(s => s.studentId));
-    return allStudents.filter(s => 
-      !checkedInIds.has(s.id) && 
-      (s.fullName.toLowerCase().includes(manualSearch.toLowerCase()) || 
-       s.accessKey.toLowerCase().includes(manualSearch.toLowerCase()))
-    ).slice(0, 5);
-  }, [allStudents, manualSearch, activeSessions]);
-
-  const formattedDate = now.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase().replace(/,/g, '').replace(/\s+/g, '-');
-  const formattedTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-  const TrendIndicator = ({ current, previous }: { current: number, previous?: number }) => {
-    if (previous === undefined || current === previous) return <Minus size={12} className="text-gray-300" />;
-    return current > previous ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />;
-  };
-
-  if (error) {
-    return (
-      <div className="p-10 bg-white rounded-[3rem] border border-red-100 shadow-sm text-center space-y-6">
-        <div className="text-6xl">⚠️</div>
-        <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tighter">System Error</h2>
-        <p className="text-red-500 font-bold text-xs uppercase tracking-widest max-w-lg mx-auto leading-relaxed">{error}</p>
-        <div className="pt-6">
-          <button onClick={() => navigate('/admin/sql')} className="bg-pink-500 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-pink-100 transition-all hover:bg-pink-600 active:scale-95">Go to SQL Terminal</button>
-        </div>
-      </div>
-    );
-  }
+  const filteredManualStudents = allStudents.filter(s => 
+    s.fullName.toLowerCase().includes(manualSearch.toLowerCase()) ||
+    s.accessKey.toLowerCase().includes(manualSearch.toLowerCase())
+  ).slice(0, 5);
 
   return (
-    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-500 pb-10">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="flex justify-between items-start w-full md:w-auto">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-black text-gray-800 uppercase tracking-tighter">Dashboard</h2>
-            <p className="text-gray-400 font-medium uppercase tracking-widest text-[10px]">Kingdom Kids Live Monitoring</p>
-          </div>
-          <button onClick={() => { audio.playClick(); setShowManualModal(true); }} className="md:hidden bg-pink-500 text-white p-3 rounded-2xl shadow-lg shadow-pink-100 active:scale-95">
-            <Search size={20} />
-          </button>
-        </div>
-        
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-           <button onClick={() => { audio.playClick(); setShowManualModal(true); }} className="hidden md:flex items-center gap-3 bg-white border border-pink-100 text-pink-500 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-pink-50 transition-all shadow-sm">
-             <Search size={16} strokeWidth={3} /> Manual Check-In
-           </button>
-           <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8 bg-white md:bg-transparent p-4 md:p-0 rounded-2xl border border-pink-50 md:border-none shadow-sm md:shadow-none w-full md:w-auto">
-            <div className="flex justify-between md:block items-center text-right">
-              <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest block mb-0.5">Date Today</span>
-              <p className="text-base md:text-lg font-black text-gray-700 uppercase tracking-tighter">{formattedDate}</p>
+    <div className="space-y-6">
+      <div className="bg-gradient-to-br from-pink-500 to-rose-400 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
+        <div className="relative z-10">
+          <h2 className="text-3xl font-black uppercase tracking-tighter">Admin Station</h2>
+          <p className="opacity-90 font-medium uppercase tracking-widest text-xs mt-1">
+            {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+          
+          {activity && (
+            <div className="mt-6 bg-white/20 p-4 rounded-2xl border border-white/20 backdrop-blur-md inline-block">
+              <span className="text-[10px] uppercase font-black tracking-widest opacity-75 block mb-1">Current Activity</span>
+              <p className="text-lg font-bold">{activity.title}</p>
             </div>
-            <div className="hidden md:block w-px h-8 bg-pink-50"></div>
-            <div className="flex justify-between md:block items-center text-right">
-              <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest block mb-0.5">Current Time</span>
-              <p className="text-base md:text-lg font-black text-gray-700 uppercase tracking-tighter">{formattedTime}</p>
-            </div>
-          </div>
+          )}
         </div>
+        <div className="absolute top-0 right-0 p-10 opacity-10 font-black text-9xl italic select-none">KINGDOM</div>
       </div>
 
-      {/* Dynamic Sundays Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-pink-500" />
-            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest">
-              {weeklyComparison?.monthName} Sunday Progression
-            </h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { label: 'Total Registry', value: stats.totalStudents, color: 'text-gray-800' },
+          { label: 'Present Today', value: stats.checkedInCount, color: 'text-green-600' },
+          { label: 'Absent Today', value: stats.absentCount, color: 'text-pink-500' },
+          { label: 'Stars Issued', value: stats.totalPointsToday, color: 'text-blue-600' }
+        ].map((s, i) => (
+          <div key={i} className="bg-white p-6 rounded-[2rem] border border-pink-50 shadow-sm">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{s.label}</p>
+            <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
           </div>
-          <span className="text-[9px] font-bold text-pink-300 uppercase tracking-tighter bg-pink-50 px-3 py-1 rounded-full border border-pink-100">Live Monthly Performance</span>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-8 rounded-[2.5rem] border border-pink-50 shadow-sm">
+            <h3 className="font-black text-gray-800 uppercase tracking-widest text-sm mb-6 flex items-center justify-between">
+              Classroom Activity
+              <span className="text-[10px] text-pink-500 font-black px-3 py-1 bg-pink-50 rounded-full">LIVE</span>
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {classrooms.map((c, i) => (
+                <div key={i} className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 group hover:border-pink-200 transition-all cursor-pointer" onClick={() => navigate(`/classrooms/${c.group}`)}>
+                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{c.group} Years</p>
+                   <div className="flex items-end justify-between">
+                     <p className="text-2xl font-black text-gray-800">{c.present}</p>
+                     <p className="text-[10px] font-bold text-gray-400">OF {c.total}</p>
+                   </div>
+                   <div className="mt-4 h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                     <div className="h-full bg-pink-500" style={{ width: `${(c.present / c.total) * 100}%` }}></div>
+                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2.5rem] border border-pink-50 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-black text-gray-800 uppercase tracking-widest text-sm">Active Sessions</h3>
+              <button onClick={() => navigate('/admin/logs')} className="text-[10px] font-black text-pink-500 uppercase hover:underline">View All Logs</button>
+            </div>
+            <div className="space-y-4">
+              {activeSessions.slice(0, 5).map((s) => (
+                <div key={s.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center font-black text-pink-500 text-xs shadow-sm border border-pink-50">
+                      {s.student?.fullName[0]}
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-gray-800 uppercase tracking-tight">{s.student?.fullName}</p>
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{s.student?.ageGroup} Group</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-black text-gray-800">{new Date(s.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className="text-[8px] font-bold text-green-500 uppercase tracking-widest">In Progress</p>
+                  </div>
+                </div>
+              ))}
+              {activeSessions.length === 0 && (
+                <div className="py-12 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest border-2 border-dashed border-gray-50 rounded-[2rem]">
+                  No active sessions found today
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="bg-white rounded-[2.5rem] shadow-sm border border-pink-50 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-50/50 text-[10px] font-bold text-pink-400 uppercase tracking-widest border-b border-pink-50">
-                  <th className="px-8 py-6">Sunday Date</th>
-                  <th className="px-8 py-6">Attendance Rate</th>
-                  <th className="px-8 py-6">Unique Kids</th>
-                  <th className="px-8 py-6">Stars Awarded</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-pink-50/30">
-                {weeklyComparison?.weeks.map((week, idx) => (
-                  <tr key={week.dateStr} className="hover:bg-pink-50/10 transition-colors group">
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 rounded-xl bg-pink-50 text-pink-500 flex items-center justify-center font-black text-[10px]">
-                          {idx + 1}
-                        </span>
-                        <span className="font-black text-gray-800 uppercase tracking-tight text-xs">{week.label}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-3">
-                        <span className="font-black text-gray-700 text-sm">{week.attendanceRate}%</span>
-                        <TrendIndicator 
-                          current={week.attendanceRate} 
-                          previous={idx > 0 ? weeklyComparison.weeks[idx-1].attendanceRate : undefined} 
-                        />
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-gray-700 text-sm">{week.presentCount}</span>
-                        <TrendIndicator 
-                          current={week.presentCount} 
-                          previous={idx > 0 ? weeklyComparison.weeks[idx-1].presentCount : undefined} 
-                        />
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-pink-500 text-sm">{week.pointsIssued.toLocaleString()}</span>
-                        <TrendIndicator 
-                          current={week.pointsIssued} 
-                          previous={idx > 0 ? weeklyComparison.weeks[idx-1].pointsIssued : undefined} 
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="space-y-6">
+          <div className="bg-white p-8 rounded-[2.5rem] border border-pink-50 shadow-sm">
+            <h3 className="font-black text-gray-800 uppercase tracking-widest text-sm mb-6">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-3">
+               {[
+                 { label: 'Check-In', path: '/admin/qr-scan', icon: '📸' },
+                 { label: 'Register', path: '/admin/students', icon: '👤' },
+                 { label: 'Points', path: '/admin/points', icon: '⭐' },
+                 { label: 'Manual', onClick: () => setShowManualModal(true), icon: '⌨️' }
+               ].map((a, i) => (
+                 <button 
+                  key={i}
+                  onClick={() => a.onClick ? a.onClick() : navigate(a.path!)}
+                  className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col items-center gap-2 hover:bg-pink-50 hover:border-pink-100 transition-all group"
+                 >
+                   <span className="text-2xl group-hover:scale-110 transition-transform">{a.icon}</span>
+                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover:text-pink-600">{a.label}</span>
+                 </button>
+               ))}
+            </div>
+          </div>
+
+          <div className="bg-pink-50 p-8 rounded-[2.5rem] border border-pink-100 shadow-sm">
+            <h3 className="font-black text-pink-600 uppercase tracking-widest text-sm mb-6 flex items-center gap-2">
+               🎂 Birthdays <span className="text-[10px] bg-white px-2 py-0.5 rounded-full">{birthdays.length}</span>
+            </h3>
+            <div className="space-y-3">
+              {birthdays.map((s) => (
+                <div key={s.id} className="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border border-pink-100">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">🎈</span>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-800 uppercase tracking-tight">{s.fullName}</p>
+                      <p className="text-[8px] font-bold text-pink-400 uppercase tracking-widest">
+                        {new Date(s.birthday).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-8 h-8 bg-pink-50 rounded-lg flex items-center justify-center text-[10px] font-black text-pink-400">
+                    {db.calculateAge(s.birthday)}
+                  </div>
+                </div>
+              ))}
+              {birthdays.length === 0 && (
+                <p className="text-center py-6 text-[10px] font-black text-pink-300 uppercase italic">No birthdays this month</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {showManualModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-            <div className="bg-pink-500 p-8 md:p-10 text-white relative">
-              <h3 className="text-2xl font-black uppercase tracking-tighter">Manual Check-In</h3>
-              <p className="text-pink-100 text-[10px] font-black uppercase tracking-widest opacity-80 mt-1">Search student for immediate arrival</p>
-              <button onClick={() => { audio.playClick(); setShowManualModal(false); }} className="absolute top-8 right-8 md:top-10 md:right-10 text-white/50 hover:text-white transition-colors">
-                <X size={32} />
-              </button>
+          <div className="bg-white w-full max-m-md rounded-[3rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+            <div className="bg-pink-500 p-8 text-white relative">
+              <h3 className="text-xl font-black uppercase tracking-tighter">Manual Check-In</h3>
+              <p className="text-pink-100 text-[10px] font-black uppercase tracking-widest opacity-80">Quickly find and record attendance</p>
+              <button onClick={() => setShowManualModal(false)} className="absolute top-8 right-8 text-white/50 hover:text-white transition-colors text-2xl">&times;</button>
             </div>
-            <div className="p-8 md:p-10 space-y-6">
-              <div className="relative">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                <input type="text" autoFocus placeholder="SEARCH BY NAME OR ACCESS KEY..." className="w-full pl-14 pr-6 py-5 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 transition-all uppercase font-black text-gray-700 text-sm tracking-tight" value={manualSearch} onChange={(e) => setManualSearch(e.target.value)} />
-              </div>
-              <div className="space-y-3 min-h-[320px]">
-                {filteredManualList.map((student) => (
-                  <div key={student.id} className="flex items-center justify-between p-4 bg-white border border-pink-50 rounded-2xl hover:bg-pink-50 transition-colors group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-pink-100 text-pink-500 rounded-xl flex items-center justify-center font-black">{student.fullName[0]}</div>
+            <div className="p-8 space-y-6">
+               <div className="relative">
+                 <input 
+                  type="text" 
+                  autoFocus
+                  placeholder="SEARCH NAME OR KEY..." 
+                  className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-pink-300 font-bold text-gray-700 uppercase"
+                  value={manualSearch}
+                  onChange={(e) => setManualSearch(e.target.value)}
+                 />
+               </div>
+               <div className="space-y-2">
+                 {filteredManualStudents.map(s => (
+                   <div key={s.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-pink-200 transition-all">
                       <div>
-                        <p className="font-black text-gray-800 uppercase tracking-tight text-sm leading-none">{student.fullName}</p>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">{student.ageGroup} Group • {student.accessKey}</p>
+                        <p className="text-xs font-black text-gray-800 uppercase tracking-tight">{s.fullName}</p>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{s.accessKey}</p>
                       </div>
-                    </div>
-                    <button onClick={() => handleManualCheckIn(student)} disabled={isCheckingIn === student.id} className="bg-green-500 text-white px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-lg shadow-green-100 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2">
-                      {isCheckingIn === student.id ? '...' : <><UserPlus size={12} strokeWidth={3} />Check In</>}
-                    </button>
-                  </div>
-                ))}
-                {manualSearch && filteredManualList.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-12 animate-in fade-in zoom-in-95">
-                    <div className="bg-pink-50 w-20 h-20 rounded-full flex items-center justify-center mb-4"><X size={40} className="text-pink-300" /></div>
-                    <p className="font-black text-[11px] uppercase tracking-[0.15em] text-gray-400 mb-6 text-center">No matching students found</p>
-                    <button onClick={() => { audio.playClick(); setShowManualModal(false); navigate('/admin/students'); }} className="flex items-center gap-2 bg-pink-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-pink-100 active:scale-95 transition-all hover:bg-pink-600">
-                      <UserPlus2 size={16} /> + New Registration
-                    </button>
-                  </div>
-                )}
-                {!manualSearch && <div className="flex flex-col items-center justify-center py-10 opacity-20"><Search size={48} className="mb-2" /><p className="font-black text-[10px] uppercase tracking-widest">Start typing to search...</p></div>}
-              </div>
-              <button onClick={() => { audio.playClick(); setShowManualModal(false); }} className="w-full py-4 text-gray-400 font-black uppercase tracking-widest text-[10px] hover:bg-gray-50 rounded-2xl transition-all">Close Search</button>
+                      <button 
+                        onClick={() => handleManualCheckIn(s.id)}
+                        disabled={isCheckingIn === s.id}
+                        className="bg-pink-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-pink-100 disabled:opacity-50"
+                      >
+                        {isCheckingIn === s.id ? '...' : 'IN'}
+                      </button>
+                   </div>
+                 ))}
+                 {manualSearch.length > 0 && filteredManualStudents.length === 0 && (
+                   <div className="py-8 text-center text-gray-300 font-black uppercase text-[10px]">No results found</div>
+                 )}
+                 {manualSearch.length === 0 && (
+                   <p className="text-center text-[9px] text-gray-300 font-bold uppercase py-4">Type to search for students</p>
+                 )}
+               </div>
             </div>
           </div>
         </div>
@@ -350,86 +363,16 @@ const AdminDashboard: React.FC<{ activity: ActivitySchedule | null }> = ({ activ
 
       {showManualEntryModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-          <ManualEntryForm initialType={manualEntryType} onClose={closeManualEntry} onSuccess={loadDashboard} />
+          <ManualEntryForm 
+            initialType={manualEntryType} 
+            onClose={closeManualEntry} 
+            onSuccess={loadDashboard}
+          />
         </div>
       )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {birthdays.length > 0 && (
-          <div className="bg-[#FFF9E6] p-6 md:p-8 rounded-[2.5rem] border-2 border-dashed border-amber-200 shadow-sm relative overflow-hidden h-fit">
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-3xl animate-bounce">🎂</span>
-                <h3 className="text-sm font-black text-amber-600 uppercase tracking-widest">Birthdays - {weeklyComparison?.monthName.toUpperCase()}</h3>
-              </div>
-              <div className="flex flex-wrap gap-4 overflow-x-auto pb-4 custom-scrollbar">
-                {birthdays.map((b, i) => (
-                  <div key={b.id} className={`bg-white p-4 rounded-xl shadow-md border-b-4 border-amber-300 transform transition-transform w-32 shrink-0 hover:rotate-0 hover:scale-105 ${i % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}>
-                    <p className="text-[10px] font-black text-gray-800 uppercase leading-tight mb-2 truncate">{getFirstName(b.fullName)}</p>
-                    <div className="flex justify-between items-end">
-                        <span className="text-[14px] font-black text-amber-500">{new Date(b.birthday).getDate()}</span>
-                        <span className="text-[8px] font-bold text-gray-300 uppercase tracking-tighter">{b.ageGroup}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Live Classroom Pulse</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {classrooms.map((cls) => (
-              <div key={cls.group} onClick={() => navigate(`/classrooms/${cls.group}`)} className="bg-white p-6 rounded-3xl border border-pink-50 shadow-sm hover:shadow-xl hover:shadow-pink-100/30 transition-all cursor-pointer group">
-                <h4 className="text-lg font-black text-gray-800 uppercase tracking-tight mb-4">{cls.group}</h4>
-                <div className="flex flex-col gap-1">
-                  <p className="text-[18px] font-black text-pink-500">{cls.present} <span className="text-[9px] text-gray-300">IN</span></p>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total: {cls.total}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Live Feed (Arrivals)</h3>
-        <div className="bg-white rounded-[2.5rem] shadow-sm border border-pink-50 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-50/50 text-[9px] font-bold text-pink-400 uppercase tracking-widest border-b border-pink-50">
-                  <th className="px-8 py-5">Student</th>
-                  <th className="px-8 py-5">Group</th>
-                  <th className="px-8 py-5">Arrival</th>
-                  <th className="px-8 py-5 text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-pink-50/50">
-                {activeSessions.slice(0, 10).map((sess) => (
-                  <tr key={sess.id} className="hover:bg-pink-50/20 transition-colors">
-                    <td className="px-8 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-pink-50 rounded-lg flex items-center justify-center text-pink-500 font-black text-[10px]">{sess.student?.fullName ? sess.student.fullName[0] : '?'}</div>
-                        <span className="font-bold text-gray-800 uppercase tracking-tight text-xs truncate max-w-[150px]">{sess.student?.fullName || 'Unknown'}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-4"><span className="px-2 py-1 bg-gray-50 text-gray-400 text-[9px] font-black rounded uppercase">{sess.student?.ageGroup || 'N/A'}</span></td>
-                    <td className="px-8 py-4 text-[10px] text-gray-500 font-bold uppercase tracking-widest">{new Date(sess.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                    <td className="px-8 py-4 text-right"><span className="inline-flex items-center gap-1.5 px-2 py-1 bg-green-50 text-green-600 text-[9px] font-black rounded-full uppercase"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>On-Site</span></td>
-                  </tr>
-                ))}
-                {activeSessions.length === 0 && (
-                  <tr><td colSpan={4} className="px-8 py-20 text-center text-gray-400 italic text-[10px] font-black uppercase tracking-[0.2em]">Registry is currently clear.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
 
+// Fix: Add default export
 export default AdminDashboard;
